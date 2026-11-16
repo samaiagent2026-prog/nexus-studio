@@ -1,0 +1,158 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Nexus Studio — design tokens
+   Every token is a CSS variable so the visual editor can retheme
+   a site at runtime without rebuilding Tailwind classes.
+   ============================================================ */
+:root {
+  --font-sans: 'Inter', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --font-display: 'Plus Jakarta Sans', 'Cairo', system-ui, sans-serif;
+
+  --brand-50: #eef4ff;
+  --brand-100: #dbe6ff;
+  --brand-200: #bdd0ff;
+  --brand-300: #90b0ff;
+  --brand-400: #5c85fd;
+  --brand-500: #3b5ef6;
+  --brand-600: #2540e6;
+  --brand-700: #1e31c4;
+  --brand-800: #1e2c9e;
+  --brand-900: #1e2c7d;
+  --brand-950: #171d4c;
+
+  --ink-50: #f6f7f9;
+  --ink-100: #eceef2;
+  --ink-200: #d5d9e2;
+  --ink-300: #b0b8c8;
+  --ink-400: #8591a8;
+  --ink-500: #67738d;
+  --ink-600: #525c74;
+  --ink-700: #434b5e;
+  --ink-800: #3a4050;
+  --ink-900: #343845;
+  --ink-950: #0e1017;
+
+  --brand-50-rgb: 238 244 255;
+  --brand-100-rgb: 219 230 255;
+  --brand-200-rgb: 189 208 255;
+  --brand-300-rgb: 144 176 255;
+  --brand-400-rgb: 92 133 253;
+  --brand-500-rgb: 59 94 246;
+  --brand-600-rgb: 37 64 230;
+  --brand-700-rgb: 30 49 196;
+  --brand-800-rgb: 30 44 158;
+  --brand-900-rgb: 30 44 125;
+  --brand-950-rgb: 23 29 76;
+  --ink-50-rgb: 246 247 249;
+  --ink-100-rgb: 236 238 242;
+  --ink-200-rgb: 213 217 226;
+  --ink-300-rgb: 176 184 200;
+  --ink-400-rgb: 133 145 168;
+  --ink-500-rgb: 103 115 141;
+  --ink-600-rgb: 82 92 116;
+  --ink-700-rgb: 67 75 94;
+  --ink-800-rgb: 58 64 80;
+  --ink-900-rgb: 52 56 69;
+  --ink-950-rgb: 14 16 23;
+
+  --radius: 1rem;
+  --shell: 1200px;
+
+  --surface: #ffffff;
+  --surface-2: #f7f8fb;
+  --surface-3: #eef1f6;
+  --border: rgba(15, 23, 42, 0.08);
+  --border-strong: rgba(15, 23, 42, 0.14);
+  --fg: #0e1017;
+  --fg-muted: #5b6479;
+}
+
+.site-theme-dark {
+  --surface: #0b1020;
+  --surface-2: #111730;
+  --surface-3: #182042;
+  --border: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --fg: #f4f6fb;
+  --fg-muted: #a7b0c6;
+}
+
+@layer base {
+  * { -webkit-tap-highlight-color: transparent; }
+  html { scroll-behavior: smooth; }
+  body {
+    @apply bg-ink-50 text-ink-950 antialiased;
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'ss01';
+  }
+  [dir='rtl'] body { font-family: 'IBM Plex Sans Arabic', var(--font-sans); }
+  ::selection { background: color-mix(in srgb, var(--brand-500) 26%, transparent); }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.35); border-radius: 99px; border: 3px solid transparent; background-clip: content-box; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.55); background-clip: content-box; }
+}
+
+@layer components {
+  /* ---------- app chrome ---------- */
+  .glass {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(18px) saturate(180%);
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+  }
+  .glass-dark {
+    background: rgba(11, 16, 32, 0.62);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .panel { @apply rounded-2xl border border-ink-200/70 bg-white shadow-soft; }
+  .btn { @apply inline-flex select-none items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-primary { @apply btn bg-brand-600 text-white shadow-soft hover:bg-brand-700 hover:shadow-lift active:scale-[.98]; }
+  .btn-ghost { @apply btn text-ink-700 hover:bg-ink-100 active:scale-[.98]; }
+  .btn-outline { @apply btn border border-ink-200 bg-white text-ink-800 hover:border-ink-300 hover:bg-ink-50 active:scale-[.98]; }
+  .btn-danger { @apply btn bg-rose-600 text-white hover:bg-rose-700 active:scale-[.98]; }
+  .chip { @apply inline-flex items-center gap-1.5 rounded-full border border-ink-200 bg-white px-2.5 py-1 text-xs font-medium text-ink-600; }
+  .field { @apply w-full rounded-xl border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 outline-none transition focus:border-brand-400 focus:ring-4 focus:ring-brand-500/10; }
+  .label { @apply mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-ink-500; }
+  .skeleton { @apply animate-pulse rounded-lg bg-ink-100; }
+
+  /* ---------- gradient / mesh backdrops ---------- */
+  .mesh {
+    background-image:
+      radial-gradient(at 12% 18%, color-mix(in srgb, var(--brand-400) 42%, transparent) 0px, transparent 55%),
+      radial-gradient(at 84% 8%, color-mix(in srgb, #22d3ee 32%, transparent) 0px, transparent 50%),
+      radial-gradient(at 72% 82%, color-mix(in srgb, var(--brand-600) 38%, transparent) 0px, transparent 55%),
+      radial-gradient(at 20% 92%, color-mix(in srgb, #a855f7 26%, transparent) 0px, transparent 50%);
+  }
+  .grid-lines {
+    background-image: linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+  .noise::after {
+    content: '';
+    position: absolute; inset: 0; pointer-events: none; opacity: .35;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+  }
+  .text-balance { text-wrap: balance; }
+  .text-pretty { text-wrap: pretty; }
+
+  /* ---------- builder affordances ---------- */
+  .editable-hover { outline: 1.5px dashed color-mix(in srgb, var(--brand-500) 55%, transparent); outline-offset: 2px; }
+  .editable-active { outline: 2px solid var(--brand-500); outline-offset: 2px; }
+  .section-handle { opacity: 0; transition: opacity .18s ease; }
+  .section-wrap:hover .section-handle, .section-wrap.is-selected .section-handle { opacity: 1; }
+}
+
+@layer utilities {
+  .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+}
+
+/* RTL-aware logical helpers used by blocks (kept explicit for clarity) */
+[dir='rtl'] .flip-x { transform: scaleX(-1); }

@@ -1,0 +1,345 @@
+import type { BlockDefinition } from '../../../lib/schema'
+import { T, img } from './helpers'
+
+/* ============================================================
+   Layout blocks: header, footer, announcement.
+   ============================================================ */
+
+export const headerBlock: BlockDefinition = {
+  type: 'header',
+  label: 'Site header',
+  category: 'layout',
+  icon: 'Layout',
+  description: 'Sticky navigation with logo, links, search, language switcher and CTA.',
+  defaults: () => ({
+    logoText: T('Nexus', 'نيكسوس'),
+    logoImage: '',
+    links: [
+      { label: T('Home', 'الرئيسية'), href: '/' },
+      { label: T('Listings', 'العقارات'), href: '/listings' },
+      { label: T('Services', 'الخدمات'), href: '/services' },
+      { label: T('About', 'من نحن'), href: '/about' },
+      { label: T('Contact', 'اتصل بنا'), href: '/contact' },
+    ],
+    ctaLabel: T('Get started', 'ابدأ الآن'),
+    ctaHref: '/contact',
+    showSearch: true,
+    showLang: true,
+    showCta: true,
+    sticky: true,
+    transparent: false,
+    searchPlaceholder: T('Search properties, services…', 'ابحث في العقارات والخدمات…'),
+    topbarOn: true,
+    topbarText: T('Free consultation for new clients this month', 'استشارة مجانية للعملاء الجدد هذا الشهر'),
+    phone: '+1 (555) 014-2200',
+    style: 'light',
+  }),
+  fields: [
+    { key: 'logoText', label: 'Logo text', type: 'localizedText', group: 'Brand' },
+    { key: 'logoImage', label: 'Logo image', type: 'image', group: 'Brand' },
+    {
+      key: 'style', label: 'Header style', type: 'select', group: 'Appearance',
+      options: [
+        { value: 'light', label: 'Light' },
+        { value: 'glass', label: 'Glass' },
+        { value: 'dark', label: 'Dark' },
+        { value: 'brand', label: 'Brand solid' },
+      ],
+    },
+    { key: 'sticky', label: 'Sticky on scroll', type: 'toggle', group: 'Appearance' },
+    { key: 'transparent', label: 'Transparent over hero', type: 'toggle', group: 'Appearance' },
+    { key: 'showSearch', label: 'Show search', type: 'toggle', group: 'Elements' },
+    { key: 'searchPlaceholder', label: 'Search placeholder', type: 'localizedText', group: 'Elements', when: (p) => !!p.showSearch },
+    { key: 'showLang', label: 'Show language switcher', type: 'toggle', group: 'Elements' },
+    { key: 'showCta', label: 'Show CTA button', type: 'toggle', group: 'Elements' },
+    { key: 'ctaLabel', label: 'CTA label', type: 'localizedText', group: 'Elements', when: (p) => !!p.showCta },
+    { key: 'ctaHref', label: 'CTA link', type: 'link', group: 'Elements', when: (p) => !!p.showCta },
+    { key: 'topbarOn', label: 'Show announcement bar', type: 'toggle', group: 'Announcement' },
+    { key: 'topbarText', label: 'Announcement text', type: 'localizedText', group: 'Announcement', when: (p) => !!p.topbarOn },
+    { key: 'phone', label: 'Phone', type: 'text', group: 'Announcement' },
+    {
+      key: 'links', label: 'Navigation links', type: 'items', group: 'Navigation',
+      itemFields: [
+        { key: 'label', label: 'Label', type: 'localizedText' },
+        { key: 'href', label: 'Link', type: 'link' },
+      ],
+      itemDefaults: () => ({ label: T('New link', 'رابط جديد'), href: '#' }),
+      itemLabel: (i) => i?.label?.en || 'Link',
+    },
+  ],
+  elements: [
+    { key: 'logo', label: 'Logo', fieldKey: 'logoText' },
+    { key: 'nav', label: 'Navigation' },
+    { key: 'search', label: 'Search' },
+    { key: 'cta.button', label: 'CTA button', fieldKey: 'ctaLabel' },
+    { key: 'topbar', label: 'Announcement bar', fieldKey: 'topbarText' },
+  ],
+}
+
+export const footerBlock: BlockDefinition = {
+  type: 'footer',
+  label: 'Site footer',
+  category: 'layout',
+  icon: 'Layout',
+  description: 'Multi-column footer with brand, link groups, newsletter and socials.',
+  defaults: () => ({
+    brand: T('Nexus Studio', 'نيكسوس استوديو'),
+    about: T('Design-led digital experiences for modern businesses across the region.', 'تجارب رقمية بقيادة التصميم للشركات الحديثة في المنطقة.'),
+    logoImage: '',
+    columns: [
+      {
+        title: T('Company', 'الشركة'),
+        links: [
+          { label: T('About us', 'من نحن'), href: '/about' },
+          { label: T('Careers', 'الوظائف'), href: '#' },
+          { label: T('Press', 'الأخبار'), href: '#' },
+          { label: T('Contact', 'اتصل بنا'), href: '/contact' },
+        ],
+      },
+      {
+        title: T('Services', 'الخدمات'),
+        links: [
+          { label: T('Consulting', 'الاستشارات'), href: '/services' },
+          { label: T('Design', 'التصميم'), href: '#' },
+          { label: T('Development', 'التطوير'), href: '#' },
+          { label: T('Support', 'الدعم'), href: '#' },
+        ],
+      },
+      {
+        title: T('Resources', 'الموارد'),
+        links: [
+          { label: T('Blog', 'المدونة'), href: '/blog' },
+          { label: T('Guides', 'الأدلة'), href: '#' },
+          { label: T('Help centre', 'مركز المساعدة'), href: '#' },
+          { label: T('Status', 'الحالة'), href: '#' },
+        ],
+      },
+    ],
+    newsletterOn: true,
+    newsletterTitle: T('Stay in the loop', 'ابقَ على اطلاع'),
+    newsletterText: T('Monthly insights. No spam, ever.', 'ملخص شهري. بدون إزعاج.'),
+    socials: [
+      { icon: 'Facebook', href: '#' },
+      { icon: 'Instagram', href: '#' },
+      { icon: 'Linkedin', href: '#' },
+      { icon: 'Youtube', href: '#' },
+    ],
+    copyright: T('© 2026 Nexus Studio. All rights reserved.', '© 2026 نيكسوس استوديو. جميع الحقوق محفوظة.'),
+    legal: [
+      { label: T('Privacy', 'الخصوصية'), href: '#' },
+      { label: T('Terms', 'الشروط'), href: '#' },
+      { label: T('Cookies', 'ملفات الارتباط'), href: '#' },
+    ],
+    showBadges: true,
+  }),
+  fields: [
+    { key: 'brand', label: 'Brand name', type: 'localizedText', group: 'Brand' },
+    { key: 'logoImage', label: 'Logo image', type: 'image', group: 'Brand' },
+    { key: 'about', label: 'About text', type: 'localizedTextarea', group: 'Brand' },
+    {
+      key: 'columns', label: 'Link columns', type: 'items', group: 'Columns',
+      itemFields: [
+        { key: 'title', label: 'Column title', type: 'localizedText' },
+        {
+          key: 'links', label: 'Links', type: 'items',
+          itemFields: [
+            { key: 'label', label: 'Label', type: 'localizedText' },
+            { key: 'href', label: 'Link', type: 'link' },
+          ],
+          itemDefaults: () => ({ label: T('New link', 'رابط جديد'), href: '#' }),
+        },
+      ],
+      itemDefaults: () => ({ title: T('Column', 'عمود'), links: [{ label: T('Link', 'رابط'), href: '#' }] }),
+      itemLabel: (i) => i?.title?.en || 'Column',
+    },
+    { key: 'newsletterOn', label: 'Show newsletter', type: 'toggle', group: 'Newsletter' },
+    { key: 'newsletterTitle', label: 'Newsletter title', type: 'localizedText', group: 'Newsletter', when: (p) => !!p.newsletterOn },
+    { key: 'newsletterText', label: 'Newsletter text', type: 'localizedText', group: 'Newsletter', when: (p) => !!p.newsletterOn },
+    {
+      key: 'socials', label: 'Social links', type: 'items', group: 'Social',
+      itemFields: [
+        { key: 'icon', label: 'Icon', type: 'icon' },
+        { key: 'href', label: 'Link', type: 'link' },
+      ],
+      itemDefaults: () => ({ icon: 'Facebook', href: '#' }),
+      itemLabel: (i) => i?.icon || 'Social',
+    },
+    { key: 'showBadges', label: 'Show trust badges', type: 'toggle', group: 'Social' },
+    { key: 'copyright', label: 'Copyright', type: 'localizedText', group: 'Legal' },
+    {
+      key: 'legal', label: 'Legal links', type: 'items', group: 'Legal',
+      itemFields: [
+        { key: 'label', label: 'Label', type: 'localizedText' },
+        { key: 'href', label: 'Link', type: 'link' },
+      ],
+      itemDefaults: () => ({ label: T('Link', 'رابط'), href: '#' }),
+      itemLabel: (i) => i?.label?.en || 'Link',
+    },
+  ],
+  elements: [
+    { key: 'brand', label: 'Brand', fieldKey: 'brand' },
+    { key: 'about', label: 'About', fieldKey: 'about' },
+    { key: 'copyright', label: 'Copyright', fieldKey: 'copyright' },
+    { key: 'newsletter', label: 'Newsletter' },
+  ],
+}
+
+export const announcementBlock: BlockDefinition = {
+  type: 'announcement',
+  label: 'Announcement bar',
+  category: 'layout',
+  icon: 'Megaphone',
+  description: 'Slim promotional strip with marquee or static message.',
+  defaults: () => ({
+    text: T('Free consultation for new clients this month — book today.', 'استشارة مجانية للعملاء الجدد هذا الشهر — احجز اليوم.'),
+    linkLabel: T('Book now', 'احجز الآن'),
+    href: '/contact',
+    variant: 'gradient',
+    marquee: false,
+    dismissible: true,
+    icon: 'Sparkles',
+  }),
+  fields: [
+    { key: 'text', label: 'Message', type: 'localizedText', group: 'Content' },
+    { key: 'linkLabel', label: 'Link label', type: 'localizedText', group: 'Content' },
+    { key: 'href', label: 'Link', type: 'link', group: 'Content' },
+    { key: 'icon', label: 'Icon', type: 'icon', group: 'Content' },
+    {
+      key: 'variant', label: 'Style', type: 'select', group: 'Appearance',
+      options: [
+        { value: 'gradient', label: 'Gradient' },
+        { value: 'dark', label: 'Dark' },
+        { value: 'soft', label: 'Soft' },
+        { value: 'outline', label: 'Outline' },
+      ],
+    },
+    { key: 'marquee', label: 'Scrolling marquee', type: 'toggle', group: 'Appearance' },
+    { key: 'dismissible', label: 'Dismissible', type: 'toggle', group: 'Appearance' },
+  ],
+  elements: [
+    { key: 'text', label: 'Message', fieldKey: 'text' },
+    { key: 'link', label: 'Link', fieldKey: 'linkLabel' },
+  ],
+}
+
+export const heroBlock: BlockDefinition = {
+  type: 'hero',
+  label: 'Hero — split media',
+  category: 'structure',
+  icon: 'Sparkles',
+  description: 'High-conversion hero with headline, CTAs, trust stats and media panel.',
+  defaults: () => ({
+    eyebrow: T('Trusted by 12,000+ clients', 'موثوق من أكثر من 12,000 عميل'),
+    heading: T('Find the space that fits the life you want', 'اعثر على المكان الذي يناسب الحياة التي تريدها'),
+    subheading: T('Browse verified listings, book viewings instantly and get expert guidance from first search to final signature.', 'تصفح العقارات الموثقة، واحجز المعاينات فوراً، واحصل على إرشاد الخبراء من أول بحث حتى التوقيع النهائي.'),
+    layout: 'split',
+    mediaSide: 'right',
+    mediaStyle: 'framed',
+    image: img('hero-split', 1200, 1400),
+    secondaryImage: img('hero-split-2', 900, 700),
+    primaryCta: { label: T('Browse listings', 'تصفح العقارات'), href: '/listings', variant: 'primary', size: 'lg', hover: 'lift', icon: 'Search', iconRight: '' },
+    secondaryCta: { label: T('Talk to an agent', 'تحدث مع مستشار'), href: '/contact', variant: 'outline', size: 'lg', hover: 'lift', icon: 'Phone', iconRight: '' },
+    statsOn: true,
+    stats: [
+      { value: '12k+', label: T('Happy clients', 'عميل سعيد') },
+      { value: '4.9', label: T('Average rating', 'متوسط التقييم') },
+      { value: '180+', label: T('Cities covered', 'مدينة مغطاة') },
+    ],
+    badgesOn: true,
+    badges: [{ text: T('Verified listings', 'عقارات موثقة') }, { text: T('Zero commission', 'بدون عمولة') }, { text: T('24/7 support', 'دعم ٢٤/٧') }],
+    floatingCardOn: true,
+    floatingCard: {
+      icon: 'BadgeCheck',
+      title: T('Instant viewing slots', 'مواعيد معاينة فورية'),
+      text: T('Pick a time that works — confirmation in under a minute.', 'اختر الوقت المناسب — تأكيد خلال أقل من دقيقة.'),
+    },
+    align: 'left',
+    backgroundStyle: 'mesh',
+    imageBadgeValue: '4.9',
+    imageBadgeLabel: T('2,140 reviews', '2,140 تقييم'),
+  }),
+  fields: [
+    { key: 'eyebrow', label: 'Eyebrow', type: 'localizedText', group: 'Heading' },
+    { key: 'heading', label: 'Headline', type: 'localizedText', group: 'Heading' },
+    { key: 'subheading', label: 'Subheadline', type: 'localizedTextarea', group: 'Heading' },
+    { key: 'align', label: 'Text alignment', type: 'select', group: 'Heading', options: [{ value: 'left', label: 'Left' }, { value: 'center', label: 'Center' }, { value: 'right', label: 'Right' }] },
+    {
+      key: 'layout', label: 'Layout', type: 'select', group: 'Layout',
+      options: [
+        { value: 'split', label: 'Split with media' },
+        { value: 'centered', label: 'Centered stack' },
+        { value: 'background', label: 'Full background image' },
+      ],
+    },
+    { key: 'mediaSide', label: 'Media side', type: 'select', group: 'Layout', when: (p) => p.layout === 'split', options: [{ value: 'right', label: 'Right' }, { value: 'left', label: 'Left' }] },
+    {
+      key: 'mediaStyle', label: 'Media style', type: 'select', group: 'Layout', when: (p) => p.layout !== 'centered',
+      options: [
+        { value: 'framed', label: 'Framed card' },
+        { value: 'plain', label: 'Plain' },
+        { value: 'stacked', label: 'Stacked duo' },
+      ],
+    },
+    { key: 'image', label: 'Hero image', type: 'image', group: 'Media' },
+    { key: 'secondaryImage', label: 'Secondary image', type: 'image', group: 'Media', when: (p) => p.mediaStyle === 'stacked' },
+    { key: 'imageBadgeValue', label: 'Media badge value', type: 'text', group: 'Media' },
+    { key: 'imageBadgeLabel', label: 'Media badge label', type: 'localizedText', group: 'Media' },
+    ...['primaryCta', 'secondaryCta'].flatMap((k, i) => [
+      { key: `${k}.label`, label: i === 0 ? 'Primary button' : 'Secondary button', type: 'localizedText' as const, group: 'Actions' },
+      { key: `${k}.href`, label: 'Button link', type: 'link' as const, group: 'Actions' },
+      {
+        key: `${k}.variant`, label: 'Button style', type: 'select' as const, group: 'Actions',
+        options: [
+          { value: 'primary', label: 'Primary' },
+          { value: 'gradient', label: 'Gradient' },
+          { value: 'outline', label: 'Outline' },
+          { value: 'secondary', label: 'Soft' },
+          { value: 'glass', label: 'Glass' },
+          { value: 'dark', label: 'Dark' },
+        ],
+      },
+      { key: `${k}.icon`, label: 'Button icon', type: 'icon' as const, group: 'Actions' },
+    ]),
+    { key: 'statsOn', label: 'Show stats', type: 'toggle', group: 'Stats' },
+    {
+      key: 'stats', label: 'Stats', type: 'items', group: 'Stats', when: (p) => !!p.statsOn,
+      itemFields: [
+        { key: 'value', label: 'Value', type: 'text' },
+        { key: 'label', label: 'Label', type: 'localizedText' },
+      ],
+      itemDefaults: () => ({ value: '100+', label: T('Label', 'تسمية') }),
+      itemLabel: (i) => i?.value || 'Stat',
+    },
+    { key: 'badgesOn', label: 'Show badges', type: 'toggle', group: 'Trust' },
+    {
+      key: 'badges', label: 'Badges', type: 'items', group: 'Trust', when: (p) => !!p.badgesOn,
+      itemFields: [{ key: 'text', label: 'Text', type: 'localizedText' }],
+      itemDefaults: () => ({ text: T('Badge', 'شارة') }),
+      itemLabel: (i) => i?.text?.en || 'Badge',
+    },
+    { key: 'floatingCardOn', label: 'Show floating card', type: 'toggle', group: 'Media' },
+    { key: 'floatingCard.icon', label: 'Card icon', type: 'icon', group: 'Media', when: (p) => !!p.floatingCardOn },
+    { key: 'floatingCard.title', label: 'Card title', type: 'localizedText', group: 'Media', when: (p) => !!p.floatingCardOn },
+    { key: 'floatingCard.text', label: 'Card text', type: 'localizedTextarea', group: 'Media', when: (p) => !!p.floatingCardOn },
+    {
+      key: 'backgroundStyle', label: 'Background', type: 'select', group: 'Appearance',
+      options: [
+        { value: 'none', label: 'None' },
+        { value: 'mesh', label: 'Gradient mesh' },
+        { value: 'grid', label: 'Grid lines' },
+        { value: 'glow', label: 'Radial glow' },
+        { value: 'dots', label: 'Dot pattern' },
+      ],
+    },
+  ],
+  elements: [
+    { key: 'eyebrow', label: 'Eyebrow', fieldKey: 'eyebrow' },
+    { key: 'heading', label: 'Headline', fieldKey: 'heading' },
+    { key: 'subheading', label: 'Subheadline', fieldKey: 'subheading' },
+    { key: 'media', label: 'Media' },
+    { key: 'primaryCta.button', label: 'Primary button', fieldKey: 'primaryCta.label' },
+    { key: 'secondaryCta.button', label: 'Secondary button', fieldKey: 'secondaryCta.label' },
+    { key: 'stats', label: 'Stats' },
+    { key: 'floatingCard', label: 'Floating card' },
+  ],
+}
