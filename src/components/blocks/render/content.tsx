@@ -153,6 +153,7 @@ export function StatsRenderer() {
             <EditableItem
               key={i}
               k="items"
+              field="items"
               index={i}
               className={cn(
                 'flex flex-col gap-3 p-6',
@@ -214,6 +215,7 @@ export function StepsRenderer() {
               <EditableItem
                 key={i}
                 k="items"
+                field="items"
                 index={i}
                 className={cn(
                   'relative flex flex-col gap-4 p-7',
@@ -397,6 +399,7 @@ export function GalleryRenderer() {
             <EditableItem
               key={i}
               k="items"
+              field="items"
               index={i}
               className={cn(
                 'group relative cursor-pointer overflow-hidden rounded-2xl border border-ink-200/60 bg-ink-100 shadow-soft',

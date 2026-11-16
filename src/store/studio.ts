@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { Block, Collections, Device, ElementStyle, Lang, MediaAsset, Page, Site, Selection, ThemeTokens } from '../lib/types'
-import { clone, move, setPath, uid } from '../lib/utils'
+import { clone, getPath, move, setPath, uid } from '../lib/utils'
 import { createBlock, createSite, ensureCollections, type CreateSiteInput } from '../lib/factory'
 import { getBlockDef } from '../components/blocks/registry'
 import { BRAND_RAMPS } from '../lib/theme'
@@ -56,6 +56,12 @@ export interface StudioState {
   updateElementStyle: (blockId: string, elementKey: string, patch: ElementStyle) => void
   resetElementStyle: (blockId: string, elementKey: string) => void
   toggleBlockFlag: (blockId: string, flag: 'hidden' | 'locked') => void
+  /** Reorder an array-backed element (e.g. a grid item) inside a block. */
+  moveItem: (blockId: string, field: string, from: number, to: number) => void
+  /** Remove one entry from an array-backed prop (grid item, nav link, …). */
+  removeItem: (blockId: string, field: string, index: number) => void
+  /** Clone one entry of an array-backed prop directly after the original. */
+  duplicateItem: (blockId: string, field: string, index: number) => void
   setBlockLabel: (blockId: string, label: string) => void
   setBlockProps: (blockId: string, props: Record<string, any>) => void
 
@@ -356,6 +362,35 @@ export const useStudio = create<StudioState>()(
 
         toggleBlockFlag: (blockId, flag) =>
           mutateSite((site) => editBlock(site, blockId, (b) => ({ ...b, [flag]: !b[flag] }))),
+
+        moveItem: (blockId, field, from, to) =>
+          mutateSite((site) =>
+            editBlock(site, blockId, (b) => {
+              const list = getPath(b.props, field)
+              if (!Array.isArray(list)) return b
+              return { ...b, props: setPath(b.props, field, move(list, from, to)) }
+            }),
+          ),
+
+        removeItem: (blockId, field, index) =>
+          mutateSite((site) =>
+            editBlock(site, blockId, (b) => {
+              const list = getPath(b.props, field)
+              if (!Array.isArray(list) || index < 0 || index >= list.length) return b
+              return { ...b, props: setPath(b.props, field, list.filter((_, i) => i !== index)) }
+            }),
+          ),
+
+        duplicateItem: (blockId, field, index) =>
+          mutateSite((site) =>
+            editBlock(site, blockId, (b) => {
+              const list = getPath(b.props, field)
+              if (!Array.isArray(list) || index < 0 || index >= list.length) return b
+              const next = [...list]
+              next.splice(index + 1, 0, clone(list[index]))
+              return { ...b, props: setPath(b.props, field, next) }
+            }),
+          ),
 
         setBlockLabel: (blockId, label) => mutateSite((site) => editBlock(site, blockId, (b) => ({ ...b, label }))),
 

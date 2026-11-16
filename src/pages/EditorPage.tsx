@@ -322,13 +322,17 @@ export function EditorPage() {
             onSelect={store.select}
             onPropChange={store.updateBlockProp}
             onElementStyle={store.updateElementStyle}
+            onResetElementStyle={store.resetElementStyle}
             onNavigate={(to) => navigate(`/site/${site.slug}${to}`)}
             onAddMedia={store.addMedia}
             onInsertBlock={handleInsert}
             onDuplicateBlock={store.duplicateBlock}
             onDeleteBlock={(id) => setConfirmDelete(id)}
-            onMoveBlock={(from, to) => store.moveBlock(from - 1, to - 1)}
             onToggleFlag={store.toggleBlockFlag}
+            onReorderBlock={store.moveBlock}
+            onMoveItem={store.moveItem}
+            onRemoveItem={store.removeItem}
+            onDuplicateItem={store.duplicateItem}
             onOpenInspector={(tab) => {
               setInspectorTab(tab)
               setShowInspector(true)

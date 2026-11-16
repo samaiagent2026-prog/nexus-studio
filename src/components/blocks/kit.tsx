@@ -2,7 +2,7 @@ import React from 'react'
 import { resolveIcon, Ic } from '../../lib/icons'
 import type { Block, Lang } from '../../lib/types'
 import { cn, getPath, tr } from '../../lib/utils'
-import { Editable, EditableItem, Element, elementStyleToCss, useBlockCtx } from './context'
+import { Editable, EditableItem, Element, elementStyleToCss, useBlockCtx, useCanvasBridge } from './context'
 
 export { Editable, EditableItem, Element }
 
@@ -281,6 +281,7 @@ export function KitButton({
   onClick?: (e: React.MouseEvent) => void
 }) {
   const ctx = useBlockCtx()
+  const bridge = useCanvasBridge()
   const overrides = ctx.block.elements?.[k]
   const Icon = icon ? resolveIcon(icon) : null
   const IconRight = iconRight ? resolveIcon(iconRight) : null
@@ -292,10 +293,13 @@ export function KitButton({
   const label = field ? tr(getPath(ctx.block.props, field), ctx.lang) : ''
   const Tag: any = href && !editing ? 'a' : 'button'
 
+  if (overrides?.hidden && !editing) return null
+
   return (
     <Tag
       {...(Tag === 'a' ? { href: resolvedHref, target: /^https?:/.test(resolvedHref ?? '') ? '_blank' : undefined, rel: 'noreferrer' } : { type: 'button' })}
-      data-el={k}
+      data-el={editing ? k : undefined}
+      data-hidden={editing && overrides?.hidden ? 'true' : undefined}
       className={cn(
         'group/btn inline-flex select-none items-center justify-center gap-2 font-semibold transition-all duration-200',
         iconOnly ? 'rounded-full p-3' : 'rounded-xl',
@@ -305,6 +309,7 @@ export function KitButton({
         editing && 'cursor-pointer',
         editing && !selected && 'hover:outline hover:outline-1 hover:outline-dashed hover:outline-brand-400/70',
         selected && 'outline outline-2 outline-brand-500',
+        editing && overrides?.hidden && 'opacity-35 saturate-0 outline outline-1 outline-dashed outline-ink-400',
         className,
       )}
       style={{
@@ -319,6 +324,13 @@ export function KitButton({
           return
         }
         onClick?.(e)
+      }}
+      onContextMenu={(e: React.MouseEvent) => {
+        if (!editing || !bridge) return
+        e.preventDefault()
+        e.stopPropagation()
+        ctx.select(ctx.block.id, k)
+        bridge.requestMenu({ x: e.clientX, y: e.clientY, blockId: ctx.block.id, elementKey: k, kind: 'element' })
       }}
     >
       {Icon && <Icon size={size === 'lg' || size === 'xl' ? 19 : 17} className="shrink-0" />}

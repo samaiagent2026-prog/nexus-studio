@@ -17,10 +17,26 @@ persisted to `localStorage`.
 - `src/components/blocks/defs/*.ts` — block definitions (English-authored
   labels/groups/options) consumed by the registry
 - `src/components/blocks/registry.ts` — block lookup (`getBlockDef`)
-- `src/components/builder/` — editor chrome: `Canvas`, `Inspector`,
-  `FloatingToolbar`, `Library`, `Panels`, `DesignPanel`, `IconPicker`,
-  `ImagePicker`
+- `src/components/builder/` — editor chrome: `Canvas`, `CanvasMenu`,
+  `Inspector`, `FloatingToolbar`, `Library`, `Panels`, `DesignPanel`,
+  `IconPicker`, `ImagePicker`
 - `src/lib/store.ts` — the single source of truth (sites, undo/redo, toasts)
+
+## Canvas interactions (edit mode)
+
+Everything on the canvas is moved and deleted from the canvas itself:
+
+- **Move** — sections have a grip chip; props-backed repeatable items
+  (`EditableItem` with a `field`) have a grip handle. Both use HTML5 drag and
+  drop; the drop target lives on the canvas (`BLOCK_MIME` / `ITEM_MIME`).
+- **Delete / more** — right-click any section, element or item opens
+  `CanvasMenu`. `Editable` / `EditableItem` / `KitButton` emit a `MenuTarget`
+  through the `CanvasBridge` context (`useCanvasBridge().requestMenu`); the
+  canvas owns the action list, so block renderers stay free of store imports.
+- **Owner actions** — right-clicking an element nested in a repeatable item
+  also exposes that item's move/duplicate/delete, discovered by walking up to
+  the nearest `[data-item-field]` ancestor.
+- All of it is disabled in preview mode; `CanvasBridge` is `null` there.
 
 ## Internationalisation (EN + AR with RTL)
 

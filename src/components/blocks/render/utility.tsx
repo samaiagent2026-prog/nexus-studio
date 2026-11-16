@@ -313,6 +313,7 @@ export function MapLocationsRenderer() {
             <EditableItem
               key={i}
               k="items"
+              field="branches"
               index={i}
               className={cn(
                 'cursor-pointer rounded-2xl border p-5 transition',
@@ -851,6 +852,7 @@ export function SocialFollowRenderer() {
             <EditableItem
               key={i}
               k="items"
+              field="items"
               index={i}
               className={cn(
                 'flex flex-col gap-4 rounded-2xl p-6 transition hover:-translate-y-1',
