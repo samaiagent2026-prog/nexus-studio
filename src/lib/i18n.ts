@@ -612,7 +612,7 @@ export const UI = {
     contentSection: 'المحتوى',
     commerceSection: 'التجارة',
     peopleSection: 'الأشخاص',
-    trustSection: 'الدليل الاجتماعي',
+    trustSection: 'الإثبات الاجتماعي',
     conversionSection: 'التحويل',
     utilitySection: 'أدوات',
     allCategories: 'الكل',

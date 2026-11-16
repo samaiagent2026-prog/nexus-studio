@@ -86,7 +86,7 @@ export const CATEGORY_LABELS: Record<BlockCategory, { en: string; ar: string }> 
   content: { en: 'Content', ar: 'المحتوى' },
   commerce: { en: 'Commerce', ar: 'التجارة' },
   people: { en: 'People', ar: 'الأشخاص' },
-  trust: { en: 'Social proof', ar: 'الدليل الاجتماعي' },
+  trust: { en: 'Social proof', ar: 'الإثبات الاجتماعي' },
   conversion: { en: 'Conversion', ar: 'التحويل' },
   utility: { en: 'Utility', ar: 'أدوات' },
 }

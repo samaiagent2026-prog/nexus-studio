@@ -315,7 +315,7 @@ const SCHEMA_COPY: Record<string, Pair> = {
   'Social': ['Social', 'التواصل الاجتماعي'],
   'Social follow': ['Social follow', 'المتابعة الاجتماعية'],
   'Social links': ['Social links', 'روابط التواصل'],
-  'Social proof note': ['Social proof note', 'ملاحظة الدليل الاجتماعي'],
+  'Social proof note': ['Social proof note', 'ملاحظة الإثبات الاجتماعي'],
   'Soft': ['Soft', 'ناعم'],
   'Solid': ['Solid', 'صلب'],
   'Spacer': ['Spacer', 'مسافة'],
