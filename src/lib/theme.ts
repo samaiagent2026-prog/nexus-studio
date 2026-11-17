@@ -102,25 +102,38 @@ function hexToChannels(hex: string): string {
   return `${(int >> 16) & 255} ${(int >> 8) & 255} ${int & 255}`
 }
 
+/**
+ * Theme tokens as CSS custom properties. The single source shared by the live
+ * editor (`applyTheme`) and the static exporter, so the exported site can
+ * never drift from the preview. Deliberately free of the DOM, which lets the
+ * build render the very same tokens under Node.
+ */
+export function themeVars(themeInput?: Partial<ThemeTokens> | null): Record<string, string> {
+  const theme: ThemeTokens = { ...defaultTheme(), ...themeInput, brand: themeInput?.brand ?? defaultTheme().brand }
+  const dark = theme.mode === 'dark'
+  const vars: Record<string, string> = {}
+  Object.entries(theme.brand).forEach(([stop, value]) => {
+    vars[`--brand-${stop}`] = value
+    vars[`--brand-${stop}-rgb`] = hexToChannels(value)
+  })
+  vars['--font-sans'] = theme.fontSans
+  vars['--font-display'] = theme.fontDisplay
+  vars['--radius'] = `${theme.radius}px`
+  vars['--shell'] = `${theme.containerWidth}px`
+  vars['--surface'] = dark ? '#0b1020' : theme.pageBg
+  vars['--surface-2'] = dark ? '#111730' : '#f7f8fb'
+  vars['--surface-3'] = dark ? '#182042' : '#eef1f6'
+  vars['--fg'] = dark ? '#f4f6fb' : '#0e1017'
+  vars['--fg-muted'] = dark ? '#a7b0c6' : '#5b6479'
+  vars['--border'] = dark ? 'rgba(255,255,255,.10)' : 'rgba(15,23,42,.08)'
+  vars['--border-strong'] = dark ? 'rgba(255,255,255,.18)' : 'rgba(15,23,42,.14)'
+  return vars
+}
+
 /** Push theme tokens onto a DOM node as CSS custom properties. */
 export function applyTheme(el: HTMLElement | null, themeInput?: Partial<ThemeTokens> | null) {
   if (!el || !themeInput) return
-  const theme: ThemeTokens = { ...defaultTheme(), ...themeInput, brand: themeInput.brand ?? defaultTheme().brand }
-  Object.entries(theme.brand).forEach(([stop, value]) => {
-    el.style.setProperty(`--brand-${stop}`, value)
-    el.style.setProperty(`--brand-${stop}-rgb`, hexToChannels(value))
-  })
-  el.style.setProperty('--font-sans', theme.fontSans)
-  el.style.setProperty('--font-display', theme.fontDisplay)
-  el.style.setProperty('--radius', `${theme.radius}px`)
-  el.style.setProperty('--shell', `${theme.containerWidth}px`)
-  el.style.setProperty('--surface', theme.mode === 'dark' ? '#0b1020' : theme.pageBg)
-  el.style.setProperty('--surface-2', theme.mode === 'dark' ? '#111730' : '#f7f8fb')
-  el.style.setProperty('--surface-3', theme.mode === 'dark' ? '#182042' : '#eef1f6')
-  el.style.setProperty('--fg', theme.mode === 'dark' ? '#f4f6fb' : '#0e1017')
-  el.style.setProperty('--fg-muted', theme.mode === 'dark' ? '#a7b0c6' : '#5b6479')
-  el.style.setProperty('--border', theme.mode === 'dark' ? 'rgba(255,255,255,.10)' : 'rgba(15,23,42,.08)')
-  el.style.setProperty('--border-strong', theme.mode === 'dark' ? 'rgba(255,255,255,.18)' : 'rgba(15,23,42,.14)')
+  Object.entries(themeVars(themeInput)).forEach(([prop, value]) => el.style.setProperty(prop, value))
 }
 
 /** Derive a 50/500/600/700 tint trio from an arbitrary hex for ad-hoc overrides. */

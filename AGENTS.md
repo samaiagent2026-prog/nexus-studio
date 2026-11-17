@@ -147,3 +147,35 @@ automatically) for runtime copy swapping.
   inline inside the stylesheet.
 - Links to pages that were never created fall back to `index.html` instead of
   shipping a broken `href`.
+
+## Generated static exports (`public/sites/`)
+
+`scripts/export-sites.mjs` pre-renders the demo sites to plain files so they have
+stable, linkable URLs: preview at `/sites/<slug>/`, download at `/sites/<slug>.zip`,
+plus `/sites/sites.json` and an index at `/sites/`. The app surfaces the same list at
+`/downloads`. These paths are git-ignored and rebuilt by `predev` / `npm run build`.
+
+How it works, and why:
+
+- The renderer is the *same* module the editor uses — `buildSiteFiles` from
+  `src/lib/export/site.tsx` — bundled for Node with esbuild (`format: 'cjs'`, because
+  React and lucide-react ship CJS that call `require()`). A plugin stubs
+  `?inline` CSS imports, which only Vite understands.
+- The stylesheet is compiled here with PostCSS + Tailwind and passed in as
+  `buildSiteFiles(site, lang, css)`; the browser path leaves it undefined and uses
+  Vite's `?inline` text. One renderer, two stylesheet sources.
+- `themeVars` (in `src/lib/theme.ts`) is the DOM-free token map behind both
+  `applyTheme` (live editor) and the exporter's `:root` block. Keep it DOM-free so
+  the build can call it under Node.
+- Demo sites come from `src/lib/demo.ts` (`buildDemoSites`), not `src/store/seed.ts`,
+  so the build never pulls in Zustand or `localStorage`.
+
+### Gotchas
+
+- `public/sites/` is generated; never hand-edit it. Run `npm run build:sites`.
+- The `/sites/<slug>/` pretty URL is served by the `staticDirIndex` middleware in
+  `vite.config.ts` (dev + preview): a trailing-slash path is otherwise treated as a
+  client route and returns the SPA shell instead of the folder's `index.html`.
+- The Node render is deliberately DOM-free. `renderToStaticMarkup` runs every
+  component's render pass but no effects, so `window`/`document` access must stay
+  inside `useEffect`/event handlers.

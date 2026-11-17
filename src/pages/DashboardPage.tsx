@@ -92,6 +92,10 @@ export function DashboardPage() {
               <Ic n='LayoutTemplate' size={15} />
               {t(lang, 'templates')}
             </button>
+            <button type="button" className="btn-outline hidden sm:inline-flex" onClick={() => navigate('/downloads')}>
+              <Ic n='FolderDown' size={15} />
+              {t(lang, 'downloads')}
+            </button>
             <button type="button" className="btn-primary" onClick={() => setCreating(true)}>
               <Ic n='Plus' size={15} />
               {t(lang, 'createSite')}

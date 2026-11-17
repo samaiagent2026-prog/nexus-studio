@@ -4,6 +4,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { EditorPage } from './pages/EditorPage'
 import { AdminPage } from './pages/AdminPage'
 import { PublicSite } from './pages/PublicSite'
+import { DownloadsPage } from './pages/DownloadsPage'
 import { Toasts } from './components/ui'
 import { useStudio } from './store/studio'
 import { seedDemoSites } from './store/seed'
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/editor/:siteId" element={<EditorPage />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/downloads" element={<DownloadsPage />} />
         <Route path="/site/:slug/*" element={<PublicSite />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

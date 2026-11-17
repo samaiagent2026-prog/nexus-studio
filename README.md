@@ -6,8 +6,11 @@ client a dedicated `/admin` panel. Ships with full English + Arabic (LTR/RTL) su
 
 ```bash
 npm install
-npm run dev      # http://localhost:12000
+npm run dev      # http://localhost:12000 (also pre-builds the static exports)
 ```
+
+`npm run build` compiles the app **and** regenerates the static site exports under
+`public/sites/` (see below).
 
 ## Stack
 
@@ -47,6 +50,25 @@ with copy, imagery and pre-populated collections.
 Localized text values throughout, mirrored layouts, logical CSS properties, and instant
 direction switching for Arabic.
 
+### Static exports & direct links
+Every site can be exported to a self-contained static bundle (HTML + inlined CSS +
+extracted assets + `nexus-site.json`) from the editor toolbar, the settings rail and the
+dashboard cards. The build also pre-renders the demo sites to disk so they are linkable with
+no client JavaScript:
+
+| URL | What it is |
+| --- | --- |
+| `/sites/` | index of every generated site |
+| `/sites/<slug>/` | preview that site (plain HTML) |
+| `/sites/<slug>.zip` | download that site as a ZIP |
+| `/sites/sites.json` | machine-readable manifest |
+| `/downloads` | in-app page listing the same preview + download links |
+
+Generate or refresh them with `npm run build:sites` (also runs automatically before
+`npm run dev` and inside `npm run build`). The renderer is the *same* module the editor uses
+(`src/lib/export/site.tsx`), bundled for Node with esbuild; only the stylesheet differs,
+because it is compiled through PostCSS rather than Vite's `?inline` import.
+
 ## Project layout
 
 ```
@@ -57,7 +79,8 @@ src/
     ui/         design-system primitives (Button, Modal, Field, Slider, Toasts, …)
     blocks/     context (Element/Editable), kit, registry, BlockRenderer, defs/, render/
     builder/    Canvas, Inspector, Library, DesignPanel, Panels, IconPicker, ImagePicker
-  pages/        Dashboard, Editor, Admin, PublicSite
+  pages/        Dashboard, Editor, Admin, PublicSite, Downloads
+scripts/        export-sites.mjs — pre-renders demo sites to public/sites/
 ```
 
 ## Demo data
@@ -66,4 +89,5 @@ First run seeds four sites (Skyline Realty, Aurora Medical, Lumen Store, Sandbox
 dashboard and admin panel are immediately explorable. Client admin logins are shown on the
 `/admin` sign-in screen — for example `admin@skyline.realty` / `skyline2026`.
 
-State persists to `localStorage`; use **Settings → Export** to take a JSON snapshot.
+State persists to `localStorage`; use **Settings → Export** to take a JSON snapshot, or
+**Download site** to save the finished website as a runnable static bundle.

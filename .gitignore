@@ -9,3 +9,6 @@ dist-ssr
 # Generated source archives served for download
 public/nexus-studio-source.tar.gz
 public/nexus-studio-source.zip
+
+# Generated static site exports (rebuilt by `npm run build:sites` / predev)
+public/sites

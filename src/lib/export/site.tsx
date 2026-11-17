@@ -2,7 +2,7 @@ import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import cssText from '../../styles.css?inline'
 import { BlockRenderer } from '../../components/blocks/BlockRenderer'
-import { applyTheme } from '../theme'
+import { themeVars } from '../theme'
 import { dirFor } from '../dir'
 import { tr } from '../utils'
 import type { Block, Lang, Site } from '../types'
@@ -84,15 +84,9 @@ function channels(hex: string): string {
   return `${(int >> 16) & 255} ${(int >> 8) & 255} ${int & 255}`
 }
 
-/**
- * Theme tokens as CSS text. We reuse `applyTheme` (the same function the live
- * editor uses) by pointing it at a detached element, so the exported site can
- * never drift from the preview.
- */
+/** Theme tokens as CSS text, built from the shared DOM-free `themeVars`. */
 function themeCss(site: Site): string {
-  const el = document.createElement('div')
-  applyTheme(el, site.theme)
-  const decls = Array.from(el.style).map((prop) => `  ${prop}: ${el.style.getPropertyValue(prop)};`)
+  const decls = Object.entries(themeVars(site.theme)).map(([prop, value]) => `  ${prop}: ${value};`)
   return `:root {\n${decls.join('\n')}\n}`
 }
 
@@ -195,11 +189,24 @@ export interface ExportResult {
   totalSize: number
 }
 
-/** Build the ZIP in memory and return it plus a manifest. */
-export function buildSiteBundle(site: Site, lang: Lang): { blob: Blob; result: ExportResult } {
+export interface BuildResult {
+  entries: ZipEntry[]
+  result: ExportResult
+}
+
+const sizeOf = (entry: ZipEntry): number =>
+  entry.text ? new TextEncoder().encode(entry.text).length : (entry.bytes?.length ?? 0)
+
+/**
+ * Render the site to its individual bundle files — no Blob, no browser — so
+ * the exact same code runs under Node during the build and in the browser when
+ * the user clicks "Download site". `cssOverride` lets the Node build supply the
+ * PostCSS-compiled stylesheet in place of Vite's `?inline` text.
+ */
+export function buildSiteFiles(site: Site, lang: Lang, cssOverride?: string): BuildResult {
   const entries: ZipEntry[] = []
   const sink: AssetSink = { entries, seen: new Map(), counter: { n: 0 } }
-  const css = `${themeCss(site)}\n${cssText}`
+  const css = cssOverride ?? `${themeCss(site)}\n${cssText}`
   const fonts = fontLinks()
 
   for (const page of site.pages) {
@@ -215,12 +222,18 @@ export function buildSiteBundle(site: Site, lang: Lang): { blob: Blob; result: E
   // The portable JSON travels with the bundle so the site can be re-imported.
   entries.push({ path: 'nexus-site.json', text: JSON.stringify(site, null, 2) })
 
-  const blob = createZip(entries)
   const result: ExportResult = {
-    files: entries.map((e) => ({ path: e.path, size: e.text ? new TextEncoder().encode(e.text).length : (e.bytes?.length ?? 0) })),
-    totalSize: blob.size,
+    files: entries.map((e) => ({ path: e.path, size: sizeOf(e) })),
+    totalSize: entries.reduce((n, e) => n + sizeOf(e), 0),
   }
-  return { blob, result }
+  return { entries, result }
+}
+
+/** Build the ZIP in memory and return it plus a manifest. */
+export function buildSiteBundle(site: Site, lang: Lang): { blob: Blob; result: ExportResult } {
+  const { entries, result } = buildSiteFiles(site, lang)
+  const blob = createZip(entries)
+  return { blob, result: { ...result, totalSize: blob.size } }
 }
 
 /** Build the bundle and hand it to the browser as a download. */
