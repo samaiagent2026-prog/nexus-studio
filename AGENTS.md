@@ -69,3 +69,81 @@ uses logical properties (`text-start`, `ms-*`, `end-*`) so it mirrors correctly.
 - Components take `lang: Lang` and call `t(lang, …)`; block renderers read it
   from `useBlockCtx()` (`ctx.lang`).
 - Icons come from the Lucide registry (`resolveIcon` / `Ic`), never direct imports.
+
+## Direct manipulation (click-anything-to-edit)
+
+`useDirectManipulation` in `src/components/blocks/context.tsx` is the single
+implementation of canvas drag-to-move and corner-grip resize. `Editable`,
+`EditableItem`, `KitButton`, `IconBadge` and `ImageBox` all opt in by passing a
+`k` (element key); the hook is a no-op outside edit mode.
+
+- Offsets are stored as `elementStyle.offsetX/offsetY` (px, relative
+  positioning) and `scale`; both are reset by the inspector's "reset position".
+- Drag is clamped to the canvas frame via `measureBounds`, which also subtracts
+  any `position: absolute` overlay panels. That is what keeps a resize grip from
+  sliding under the side panel at narrow widths.
+- The resize grip sits *inside* the element (`bottom-0.5 end-0.5`). Ancestors use
+  `overflow-hidden`, so an outward-offset handle gets clipped and becomes
+  unclickable.
+- `onPointerDown` calls `stopPropagation()` so nested draggables (an image
+  inside a card) do not move both the child and the ancestor.
+- Absolutely-positioned `ImageBox`es (hero backgrounds) are selectable but not
+  draggable, because `left/top` would fight their own placement.
+
+`src/lib/capabilities.ts` maps a clicked element key to the block props that
+belong to it, powering the "see everything about this element" panel. When
+adding a new element key that does not mirror its prop path, add a rule to
+`KEY_ALIASES` or extend `pathMatches`.
+
+### Gotchas
+
+- Selection is **ephemeral UI state** — it is not written to localStorage. Test
+  it through the DOM (`.outline-brand-500` on `[data-el]`) or the panel header.
+- `data-el` must be gated on `ctx.mode === 'edit'`; otherwise the attribute
+  leaks into the published site.
+- Offline sandboxes cannot reach `picsum.photos` / Google Fonts, so console
+  "Failed to load resource" noise is expected. Assert real failures on
+  `page.on('response')` for same-origin URLs instead.
+
+## Static site export ("Download site")
+
+`src/lib/export/` turns a `Site` into a self-contained bundle the user can save
+to their device — this is the answer to "the designed site cannot be
+downloaded".
+
+- `site.tsx` — `downloadSiteBundle(site, lang)` renders each page with
+  `renderToStaticMarkup` (mode `'export'`), inlines the compiled Tailwind CSS
+  plus theme tokens, rewrites `<a href>` between pages to sibling `.html`
+  files, and zips everything.
+- `runtime.ts` — a small vanilla script embedded in every page. It re-binds the
+  behaviour React used to own: EN/AR switching (with `dir`/`lang` on `<html>`),
+  the mobile menu, accordions, tabs and the gallery lightbox.
+- `../zip.ts` — dependency-free ZIP writer (CRC32 + stored deflate-free entries).
+
+### Adding an interactive block
+
+Interactive renderers must expose **export hooks** so the runtime can drive
+them without React:
+
+- gate every hook on `ctx.mode === 'edit' ? undefined : …` so nothing leaks into
+  the canvas;
+- hide/show with the `hidden` **class**, never the `hidden` attribute — Tailwind
+  display utilities (`.grid`, `.flex`) override the attribute;
+- scope DOM lookups to a `data-nexus-*-root` wrapper, since panels are siblings
+  of the control that toggles them, not descendants.
+
+Hooks in use: `data-nexus-lang`, `data-nexus-menu(-toggle)`,
+`data-nexus-accordion(-item/-trigger/-panel)`, `data-nexus-tab`,
+`data-nexus-tab-panel` (inside `data-nexus-tabs-root`), `data-nexus-lightbox-src`,
+and `data-nexus-i18n` + `data-en`/`data-ar` on any `Editable` (emitted
+automatically) for runtime copy swapping.
+
+### Gotchas
+
+- Never run `npx prettier` here: there is no repo config, so the default profile
+  reflows the whole file and destroys the hand-tuned long-line style.
+- Inline `data:` images are extracted to `assets/asset-N.ext` and de-duplicated;
+  percent-encoded SVG (icons, the CSS noise texture) is intentionally left
+  inline inside the stylesheet.
+- Links to pages that were never created fall back to `index.html` instead of
+  shipping a broken `href`.

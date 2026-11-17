@@ -86,16 +86,16 @@ export function HeroRenderer() {
     <Element k="media" className="relative">
       {p.mediaStyle === 'stacked' ? (
         <div className="relative">
-          <ImageBox src={p.image} ratio="4/5" rounded="rounded-[28px]" className="shadow-lift" />
+          <ImageBox k="image" field="image" src={p.image} ratio="4/5" rounded="rounded-[28px]" className="shadow-lift" />
           <div className="absolute -bottom-8 w-[58%] overflow-hidden rounded-2xl border-4 border-white shadow-lift start-[-2rem]">
-            <ImageBox src={p.secondaryImage} ratio="4/3" rounded="rounded-xl" />
+            <ImageBox k="secondaryImage" field="secondaryImage" src={p.secondaryImage} ratio="4/3" rounded="rounded-xl" />
           </div>
         </div>
       ) : p.mediaStyle === 'plain' ? (
-        <ImageBox src={p.image} ratio="4/5" rounded="rounded-[28px]" />
+        <ImageBox k="image" field="image" src={p.image} ratio="4/5" rounded="rounded-[28px]" />
       ) : (
         <div className="relative rounded-[32px] border border-white/60 bg-white/60 p-2.5 shadow-lift backdrop-blur">
-          <ImageBox src={p.image} ratio="4/5" rounded="rounded-[26px]" />
+          <ImageBox k="image" field="image" src={p.image} ratio="4/5" rounded="rounded-[26px]" />
         </div>
       )}
 
@@ -143,8 +143,8 @@ export function HeroRenderer() {
     return (
       <Section className="overflow-hidden" innerStyle={{ minHeight: '620px' }}>
         <div className="absolute inset-0">
-          <ImageBox src={p.image} ratio="16/9" rounded="rounded-none" className="h-full min-h-[620px] w-full" />
-          <div className="absolute inset-0 bg-gradient-to-r from-ink-950/90 via-ink-950/70 to-ink-950/30" />
+          <ImageBox k="image" field="image" src={p.image} ratio="16/9" rounded="rounded-none" className="h-full min-h-[620px] w-full" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-ink-950/90 via-ink-950/70 to-ink-950/30" />
         </div>
         <div className="relative py-16 lg:py-24">
           <div className="max-w-2xl text-white [&_h1]:text-white [&_p]:text-white/75">
@@ -180,8 +180,8 @@ export function HeroSearchRenderer() {
   return (
     <Section className="overflow-hidden" innerStyle={{ minHeight: '560px' }}>
       <div className="absolute inset-0">
-        <ImageBox src={p.backgroundImage} ratio="16/9" rounded="rounded-none" className="h-full min-h-[560px] w-full" />
-        <div className="absolute inset-0" style={{ background: `linear-gradient(180deg, rgba(9,12,24,${(p.overlay ?? 0.6) + 0.12}) 0%, rgba(9,12,24,${p.overlay ?? 0.6}) 55%, rgba(9,12,24,${Math.max(0.2, (p.overlay ?? 0.6) - 0.2)}) 100%)` }} />
+        <ImageBox k="backgroundImage" field="backgroundImage" src={p.backgroundImage} ratio="16/9" rounded="rounded-none" className="h-full min-h-[560px] w-full" />
+        <div className="pointer-events-none absolute inset-0" style={{ background: `linear-gradient(180deg, rgba(9,12,24,${(p.overlay ?? 0.6) + 0.12}) 0%, rgba(9,12,24,${p.overlay ?? 0.6}) 55%, rgba(9,12,24,${Math.max(0.2, (p.overlay ?? 0.6) - 0.2)}) 100%)` }} />
       </div>
 
       <div className={cn('relative py-10 text-white lg:py-16', p.align === 'center' && 'text-center')}>
@@ -227,7 +227,7 @@ export function HeroSearchRenderer() {
                 return (
                   <div
                     key={i}
-                    data-el={`filter.${i}`}
+                    data-el={ctx.mode === 'edit' ? `filter.${i}` : undefined}
                     onClick={(e) => {
                       if (ctx.mode === 'edit') {
                         e.stopPropagation()
@@ -356,8 +356,8 @@ export function CtaBandRenderer() {
       <Element k="band" className={shell}>
         {variant === 'image' && p.backgroundImage && (
           <>
-            <ImageBox src={p.backgroundImage} ratio="16/6" rounded="rounded-none" className="absolute inset-0 h-full w-full" />
-            <div className="absolute inset-0 bg-ink-950/70" />
+            <ImageBox k="backgroundImage" field="backgroundImage" src={p.backgroundImage} ratio="16/6" rounded="rounded-none" className="absolute inset-0 h-full w-full" />
+            <div className="pointer-events-none absolute inset-0 bg-ink-950/70" />
           </>
         )}
         {(variant === 'gradient' || variant === 'dark') && <div className="pointer-events-none absolute inset-0 grid-lines opacity-40" />}

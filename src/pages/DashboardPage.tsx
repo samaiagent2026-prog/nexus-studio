@@ -5,6 +5,7 @@ import { t } from '../lib/i18n'
 import { dirFor } from '../lib/dir'
 import { applyTheme } from '../lib/theme'
 import { TEMPLATES, instantiateTemplate, blankSite, type TemplateDef } from '../lib/templates'
+import { downloadSiteBundle } from '../lib/export/site'
 import { clone, downloadJson, formatDate, slugify, tr } from '../lib/utils'
 import { Badge, ConfirmDialog, Dropdown, EmptyState, Field, IconButton, MenuItem, Modal, Segmented, TextInput, Tooltip } from '../components/ui'
 import { useStudio } from '../store/studio'
@@ -193,6 +194,10 @@ export function DashboardPage() {
                   toast(site.settings.published ? 'Moved to draft' : 'Site published')
                 }}
                 onExport={() => downloadJson(`${site.slug}.json`, site)}
+                onDownload={() => {
+                  const result = downloadSiteBundle(site, lang)
+                  toast(`${t(lang, 'downloadSiteDone')} · ${result.files.length} ${t(lang, 'filesLabel')}`)
+                }}
                 onDelete={() => setConfirm(site)}
               />
             ))}
@@ -278,6 +283,7 @@ function SiteCard({
   onDuplicate,
   onTogglePublish,
   onExport,
+  onDownload,
   onDelete,
 }: {
   site: Site
@@ -288,6 +294,7 @@ function SiteCard({
   onDuplicate: () => void
   onTogglePublish: () => void
   onExport: () => void
+  onDownload: () => void
   onDelete: () => void
 }) {
   const heroBlock = site.pages[0]?.blocks.find((b) => b.type === 'hero' || b.type === 'heroSearch' || b.type === 'banner')
@@ -355,6 +362,7 @@ function SiteCard({
               <>
                 <MenuItem icon="Pencil" label={t(lang, 'rename')} onClick={() => { onRename(); close() }} />
                 <MenuItem icon="Copy" label={t(lang, 'duplicate')} onClick={() => { onDuplicate(); close() }} />
+                <MenuItem icon="FolderDown" label={t(lang, 'downloadSite')} onClick={() => { onDownload(); close() }} />
                 <MenuItem icon="Download" label={t(lang, 'export')} onClick={() => { onExport(); close() }} />
                 <MenuItem icon={site.settings.published ? 'EyeOff' : 'Globe'} label={site.settings.published ? t(lang, 'unpublish') : t(lang, 'publish')} onClick={() => { onTogglePublish(); close() }} />
                 <div className="my-1 h-px bg-ink-100" />

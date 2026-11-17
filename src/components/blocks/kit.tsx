@@ -2,7 +2,8 @@ import React from 'react'
 import { resolveIcon, Ic } from '../../lib/icons'
 import type { Block, Lang } from '../../lib/types'
 import { cn, getPath, tr } from '../../lib/utils'
-import { Editable, EditableItem, Element, elementStyleToCss, useBlockCtx, useCanvasBridge } from './context'
+import { t } from '../../lib/i18n'
+import { Editable, EditableItem, Element, elementStyleToCss, useBlockCtx, useCanvasBridge, useDirectManipulation } from './context'
 
 export { Editable, EditableItem, Element }
 
@@ -81,7 +82,19 @@ export function Section({
       data-block-id={ctx.block.id}
       data-block-type={ctx.block.type}
     >
-      {s.bgImage && s.bgOverlay != null && (
+      {s.bgVideo && (
+        <video
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+          src={s.bgVideo}
+          poster={s.bgVideoPoster || undefined}
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="metadata"
+        />
+      )}
+      {(s.bgImage || s.bgVideo) && s.bgOverlay != null && (
         <div className="pointer-events-none absolute inset-0" style={{ background: `rgba(0,0,0,${s.bgOverlay})` }} />
       )}
       <div className="relative">
@@ -282,6 +295,7 @@ export function KitButton({
 }) {
   const ctx = useBlockCtx()
   const bridge = useCanvasBridge()
+  const btnRef = React.useRef<HTMLElement | null>(null)
   const overrides = ctx.block.elements?.[k]
   const Icon = icon ? resolveIcon(icon) : null
   const IconRight = iconRight ? resolveIcon(iconRight) : null
@@ -292,12 +306,14 @@ export function KitButton({
 
   const label = field ? tr(getPath(ctx.block.props, field), ctx.lang) : ''
   const Tag: any = href && !editing ? 'a' : 'button'
+  const { grip, dragging, dragHandlers } = useDirectManipulation({ ref: btnRef, k, enabled: editing, selected })
 
   if (overrides?.hidden && !editing) return null
 
   return (
     <Tag
       {...(Tag === 'a' ? { href: resolvedHref, target: /^https?:/.test(resolvedHref ?? '') ? '_blank' : undefined, rel: 'noreferrer' } : { type: 'button' })}
+      ref={btnRef}
       data-el={editing ? k : undefined}
       data-hidden={editing && overrides?.hidden ? 'true' : undefined}
       className={cn(
@@ -306,9 +322,10 @@ export function KitButton({
         VARIANT[variant] ?? VARIANT.primary,
         SIZE[size] ?? SIZE.md,
         HOVER[hover] ?? '',
-        editing && 'cursor-pointer',
+        editing && 'cursor-grab active:cursor-grabbing',
         editing && !selected && 'hover:outline hover:outline-1 hover:outline-dashed hover:outline-brand-400/70',
         selected && 'outline outline-2 outline-brand-500',
+        dragging && 'opacity-90',
         editing && overrides?.hidden && 'opacity-35 saturate-0 outline outline-1 outline-dashed outline-ink-400',
         className,
       )}
@@ -316,6 +333,7 @@ export function KitButton({
         ...elementStyleToCss(overrides),
         ...(radius != null ? { borderRadius: iconOnly ? '9999px' : `${radius}px` } : {}),
       }}
+      {...(editing ? dragHandlers : {})}
       onClick={(e: React.MouseEvent) => {
         if (editing) {
           e.preventDefault()
@@ -336,6 +354,7 @@ export function KitButton({
       {Icon && <Icon size={size === 'lg' || size === 'xl' ? 19 : 17} className="shrink-0" />}
       {field ? <InlineLabel field={field} fallback={label} /> : null}
       {IconRight && <IconRight size={size === 'lg' || size === 'xl' ? 19 : 17} className={cn('shrink-0 transition-transform group-hover/btn:translate-x-0.5', ctx.dir === 'rtl' && 'rotate-180')} />}
+      {grip}
     </Tag>
   )
 }
@@ -381,18 +400,27 @@ export function Stars({ rating = 5, size = 15, className }: { rating?: number; s
 }
 
 export function IconBadge({
+  k,
   icon,
   className,
   size = 22,
   tone = 'brand',
   round = 'xl2',
 }: {
+  /** Element key: when given, the badge becomes selectable/movable in the canvas. */
+  k?: string
   icon?: string
   className?: string
   size?: number
   tone?: 'brand' | 'soft' | 'solid' | 'glass' | 'outline'
   round?: 'full' | 'xl2' | 'lg'
 }) {
+  const ctx = useBlockCtx()
+  const badgeRef = React.useRef<HTMLSpanElement | null>(null)
+  const editing = ctx.mode === 'edit'
+  const selected = !!k && ctx.selection?.blockId === ctx.block.id && ctx.selection?.elementKey === k
+  const overrides = k ? ctx.block.elements?.[k] : undefined
+  const { grip, dragging, dragHandlers } = useDirectManipulation({ ref: badgeRef, k: k ?? '', enabled: editing && !!k, selected })
   const Icon = resolveIcon(icon)
   const tones = {
     brand: 'bg-brand-600 text-white shadow-soft',
@@ -403,15 +431,37 @@ export function IconBadge({
   }
   return (
     <span
+      ref={badgeRef}
+      data-el={editing && k ? k : undefined}
       className={cn(
         'inline-flex shrink-0 items-center justify-center',
         round === 'full' ? 'rounded-full' : round === 'lg' ? 'rounded-xl' : 'rounded-2xl',
         tones[tone],
         'h-11 w-11',
+        editing && k && 'cursor-grab active:cursor-grabbing',
+        editing && k && !selected && 'hover:outline hover:outline-1 hover:outline-dashed hover:outline-brand-400/70',
+        selected && 'outline outline-2 outline-brand-500',
+        dragging && 'opacity-90',
         className,
       )}
+      style={elementStyleToCss(overrides)}
+      {...(editing && k
+        ? {
+            ...dragHandlers,
+            onClick: (e: React.MouseEvent) => {
+              e.stopPropagation()
+              ctx.select(ctx.block.id, k)
+            },
+            onContextMenu: (e: React.MouseEvent) => {
+              e.preventDefault()
+              e.stopPropagation()
+              ctx.select(ctx.block.id, k)
+            },
+          }
+        : {})}
     >
       <Icon size={size} strokeWidth={2} />
+      {grip}
     </span>
   )
 }
@@ -484,6 +534,8 @@ export function Card({ children, className, style, hover = true }: { children: R
 }
 
 export function ImageBox({
+  k,
+  field,
   src,
   alt,
   className,
@@ -492,6 +544,9 @@ export function ImageBox({
   overlay,
   children,
 }: {
+  /** Element key + prop path: makes the image selectable, movable and droppable. */
+  k?: string
+  field?: string
   src?: string
   alt?: string
   className?: string
@@ -500,10 +555,78 @@ export function ImageBox({
   overlay?: React.ReactNode
   children?: React.ReactNode
 }) {
+  const ctx = useBlockCtx()
+  const boxRef = React.useRef<HTMLDivElement | null>(null)
   const [failed, setFailed] = React.useState(false)
+  const [over, setOver] = React.useState(false)
+  const editing = ctx.mode === 'edit'
+  const interactive = editing && !!k
+  // Absolutely positioned images (hero backgrounds) keep their own placement.
+  const movable = interactive && !/(^|\s)absolute(\s|$)/.test(className ?? '')
+  const selected = !!k && ctx.selection?.blockId === ctx.block.id && ctx.selection?.elementKey === k
+  const overrides = k ? ctx.block.elements?.[k] : undefined
+  const { grip, dragging, dragHandlers } = useDirectManipulation({ ref: boxRef, k: k ?? '', enabled: movable, selected })
   const hasSrc = !!src && !failed
+
+  const applyDrop = (dt: DataTransfer) => {
+    if (!field) return
+    const url = dt.getData('text/uri-list') || dt.getData('text/plain')
+    if (url && /^(https?:|data:image)/.test(url.trim())) ctx.updateProp(field, url.trim())
+    else {
+      const file = dt.files?.[0]
+      if (file?.type.startsWith('image/')) {
+        const reader = new FileReader()
+        reader.onload = () => ctx.updateProp(field, String(reader.result))
+        reader.readAsDataURL(file)
+      }
+    }
+  }
+
   return (
-    <div className={cn('relative w-full overflow-hidden bg-ink-100', rounded, className)} style={{ aspectRatio: ratio }}>
+    <div
+      ref={boxRef}
+      data-el={interactive ? k : undefined}
+      data-drop-image={interactive && field ? field : undefined}
+      className={cn(
+        'relative w-full overflow-hidden bg-ink-100',
+        rounded,
+        interactive && 'cursor-grab active:cursor-grabbing',
+        interactive && !selected && 'hover:outline hover:outline-1 hover:outline-dashed hover:outline-brand-400/70',
+        selected && 'outline outline-2 outline-brand-500',
+        dragging && 'opacity-90',
+        over && 'ring-4 ring-brand-500',
+        className,
+      )}
+      style={{ aspectRatio: ratio, ...elementStyleToCss(overrides) }}
+      {...(interactive
+        ? {
+            ...dragHandlers,
+            onClick: (e: React.MouseEvent) => {
+              e.stopPropagation()
+              ctx.select(ctx.block.id, k)
+            },
+            onContextMenu: (e: React.MouseEvent) => {
+              e.preventDefault()
+              e.stopPropagation()
+              ctx.select(ctx.block.id, k)
+            },
+            onDragOver: (e: React.DragEvent) => {
+              if (!field) return
+              e.preventDefault()
+              e.stopPropagation()
+              setOver(true)
+            },
+            onDragLeave: () => setOver(false),
+            onDrop: (e: React.DragEvent) => {
+              if (!field) return
+              e.preventDefault()
+              e.stopPropagation()
+              setOver(false)
+              applyDrop(e.dataTransfer)
+            },
+          }
+        : {})}
+    >
       {hasSrc ? (
         <img src={src} alt={alt ?? ''} loading="lazy" onError={() => setFailed(true)} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]" />
       ) : (
@@ -511,8 +634,14 @@ export function ImageBox({
           <Ic n='Image' size={34} className="text-white/70" />
         </div>
       )}
+      {interactive && over && (
+        <span className="pointer-events-none absolute inset-x-0 bottom-0 z-30 bg-brand-600 px-2 py-1 text-center text-[10.5px] font-bold text-white">
+          {t(ctx.lang, 'dropImageHint')}
+        </span>
+      )}
       {overlay}
       {children}
+      {grip}
     </div>
   )
 }

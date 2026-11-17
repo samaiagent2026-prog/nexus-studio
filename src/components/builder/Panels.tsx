@@ -122,6 +122,7 @@ export function SettingsPanel({
   onAdmin,
   onAddMedia,
   onExport,
+  onDownload,
   onImport,
   onReset,
   lang,
@@ -131,6 +132,7 @@ export function SettingsPanel({
   onAdmin: (patch: Partial<Site['admin']>) => void
   onAddMedia: (assets: Site['media']) => void
   onExport: () => void
+  onDownload: () => void
   onImport: (json: string) => void
   onReset: () => void
   lang: Lang
@@ -208,6 +210,11 @@ export function SettingsPanel({
 
       <section className="flex flex-col gap-3 border-t border-[var(--border)] pt-4">
         <h4 className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-ink-400">{t(lang, 'dataSection')}</h4>
+        <button type="button" className="btn-primary w-full !py-3" onClick={onDownload}>
+          <Ic n='FolderDown' size={16} />
+          {t(lang, 'downloadSite')}
+        </button>
+        <p className="text-[11px] leading-snug text-ink-500">{t(lang, 'downloadSiteHint')}</p>
         <div className="flex gap-2">
           <button type="button" className="btn-outline flex-1" onClick={onExport}>
             <Ic n='Download' size={14} />

@@ -18,6 +18,67 @@ const HEADER_STYLES: Record<string, string> = {
   brand: 'bg-brand-600 text-white',
 }
 
+/**
+ * Logo element that accepts an image dropped straight onto it in edit mode.
+ * Dropping sets the header logo; a click still selects the element as usual.
+ */
+function LogoDrop({
+  value,
+  onDrop,
+  children,
+  label,
+}: {
+  value?: string
+  onDrop: (url: string) => void
+  children: React.ReactNode
+  label: string
+}) {
+  const ctx = useBlockCtx()
+  const [over, setOver] = React.useState(false)
+  const editing = ctx.mode === 'edit'
+  const readFile = (file?: File) => {
+    if (!file || !file.type.startsWith('image/')) return
+    const reader = new FileReader()
+    reader.onload = () => onDrop(String(reader.result))
+    reader.readAsDataURL(file)
+  }
+  return (
+    <div
+      onDragOver={(e) => {
+        if (!editing) return
+        e.preventDefault()
+        e.stopPropagation()
+        setOver(true)
+      }}
+      onDragLeave={() => setOver(false)}
+      onDrop={(e) => {
+        if (!editing) return
+        e.preventDefault()
+        e.stopPropagation()
+        setOver(false)
+        const url = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain')
+        if (url && /^(https?:|data:image)/.test(url.trim())) onDrop(url.trim())
+        else readFile(e.dataTransfer.files?.[0])
+      }}
+      className={cn('relative rounded-xl transition', editing && over && 'ring-2 ring-brand-500 ring-offset-2')}
+      data-logo-drop={editing ? '' : undefined}
+      title={editing ? label : undefined}
+    >
+      {children}
+      {editing && over && (
+        <span className="pointer-events-none absolute -bottom-7 start-0 z-30 whitespace-nowrap rounded-lg bg-brand-600 px-2 py-1 text-[10.5px] font-bold text-white shadow-lift">
+          {label}
+        </span>
+      )}
+      {editing && !value && !over && (
+        <span className="pointer-events-none absolute -bottom-6 start-0 z-30 whitespace-nowrap rounded-lg bg-ink-950/85 px-2 py-0.5 text-[10px] font-semibold text-white opacity-0 transition group-hover:opacity-100">
+          {label}
+        </span>
+      )}
+    </div>
+  )
+}
+
 export function HeaderRenderer() {
   const ctx = useBlockCtx()
   const { block, lang, mode } = ctx
@@ -57,10 +118,10 @@ export function HeaderRenderer() {
             <Ic n='Megaphone' size={14} />
           </Element>
           <Editable k="topbar.text" field="topbarText" as="span" className="truncate" />
-          {p.phone && (
+          {(p.phone || mode === 'edit') && (
             <span className="hidden items-center gap-1.5 md:inline-flex">
               <Ic n='Phone' size={13} />
-              <span className="tabular-nums">{p.phone}</span>
+              <Editable k="topbar.phone" field="phone" valueKind="plain" as="span" className="tabular-nums" />
             </span>
           )}
         </Element>
@@ -68,21 +129,23 @@ export function HeaderRenderer() {
 
       <Container>
         <div className="flex h-[68px] items-center justify-between gap-4">
-          <Element k="logo" as="a" className="group flex shrink-0 items-center gap-2.5" href={ctx.href('/')}>
-            {p.logoImage ? (
-              <img src={p.logoImage} alt="" className="h-9 w-auto max-w-[160px] object-contain" />
-            ) : (
-              <Element
-                k="logo.mark"
-                as="span"
-                affordance={false}
-                className={cn('inline-flex h-9 w-9 items-center justify-center rounded-xl transition-transform group-hover:scale-105', dark ? 'bg-white/15 text-white' : 'bg-brand-600 text-white')}
-              >
-                <LogoIcon size={18} />
-              </Element>
-            )}
-            <Editable k="logo.text" field="logoText" as="span" className="font-display text-[17px] font-extrabold tracking-tight" />
-          </Element>
+          <LogoDrop value={p.logoImage} onDrop={(url) => ctx.updateProp('logoImage', url)} label={t(lang, 'dragLogoHint')}>
+            <Element k="logo" as="a" className="group flex shrink-0 items-center gap-2.5" href={ctx.href('/')}>
+              {p.logoImage ? (
+                <img src={p.logoImage} alt="" className="h-9 w-auto max-w-[160px] object-contain" />
+              ) : (
+                <Element
+                  k="logo.mark"
+                  as="span"
+                  affordance={false}
+                  className={cn('inline-flex h-9 w-9 items-center justify-center rounded-xl transition-transform group-hover:scale-105', dark ? 'bg-white/15 text-white' : 'bg-brand-600 text-white')}
+                >
+                  <LogoIcon size={18} />
+                </Element>
+              )}
+              <Editable k="logo.text" field="logoText" as="span" className="font-display text-[17px] font-extrabold tracking-tight" />
+            </Element>
+          </LogoDrop>
 
           <Element k="nav" as="nav" className="hidden items-center gap-0.5 lg:flex" affordance={false}>
             {links.map((link, i) => (
@@ -94,7 +157,7 @@ export function HeaderRenderer() {
                   dark ? 'text-white/85 hover:bg-white/10 hover:text-white' : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900',
                   ctx.selection?.elementKey === `nav.${i}` && 'outline outline-2 outline-brand-500',
                 )}
-                data-el={`nav.${i}`}
+                data-el={mode === 'edit' ? `nav.${i}` : undefined}
                 onClick={(e) => {
                   if (mode === 'edit') {
                     e.preventDefault()
@@ -130,6 +193,7 @@ export function HeaderRenderer() {
                   <button
                     key={code}
                     type="button"
+                    data-nexus-lang={mode === 'edit' ? undefined : code}
                     onClick={(e) => {
                       e.stopPropagation()
                       if (mode === 'edit') return
@@ -138,6 +202,7 @@ export function HeaderRenderer() {
                     className={cn(
                       'rounded-lg px-2.5 py-1.5 text-[12px] font-bold uppercase transition',
                       lang === code ? 'bg-brand-600 text-white' : dark ? 'text-white/70 hover:text-white' : 'text-ink-500 hover:text-ink-800',
+                      mode !== 'edit' && (lang === code ? 'nexus-lang-on' : 'nexus-lang-off'),
                     )}
                   >
                     {code}
@@ -152,6 +217,8 @@ export function HeaderRenderer() {
 
             <button
               type="button"
+              data-nexus-menu-toggle={mode === 'edit' ? undefined : ''}
+              aria-expanded={open}
               onClick={(e) => {
                 e.stopPropagation()
                 setOpen((v) => !v)
@@ -165,8 +232,15 @@ export function HeaderRenderer() {
         </div>
       </Container>
 
-      {open && (
-        <div className={cn('border-t lg:hidden', dark ? 'border-white/10 bg-ink-950' : 'border-ink-200 bg-white')}>
+      {(open || mode !== 'edit') && (
+        <div
+          data-nexus-menu={mode === 'edit' ? undefined : ''}
+          className={cn(
+            'border-t lg:hidden',
+            dark ? 'border-white/10 bg-ink-950' : 'border-ink-200 bg-white',
+            mode !== 'edit' && !open && 'hidden',
+          )}
+        >
           <Container>
             <nav className="flex flex-col py-2">
               {links.map((link, i) => (
@@ -213,16 +287,18 @@ export function FooterRenderer() {
       <Container className="relative">
         <div className="grid gap-12 py-16 lg:grid-cols-12 lg:gap-8 lg:py-20">
           <div className="lg:col-span-4">
-            <Element k="brand" as="div" className="flex items-center gap-2.5">
-              {p.logoImage ? (
-                <img src={p.logoImage} alt="" className="h-9 w-auto max-w-[170px] object-contain" />
-              ) : (
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-brand-500 text-white">
-                  <Ic n='Gem' size={18} />
-                </span>
-              )}
-              <Editable k="brand.text" field="brand" as="span" className="font-display text-lg font-extrabold tracking-tight" />
-            </Element>
+            <LogoDrop value={p.logoImage} onDrop={(url) => ctx.updateProp('logoImage', url)} label={t(lang, 'dragLogoHint')}>
+              <Element k="brand" as="div" className="flex items-center gap-2.5">
+                {p.logoImage ? (
+                  <img src={p.logoImage} alt="" className="h-9 w-auto max-w-[170px] object-contain" />
+                ) : (
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-brand-500 text-white">
+                    <Ic n='Gem' size={18} />
+                  </span>
+                )}
+                <Editable k="brand.text" field="brand" as="span" className="font-display text-lg font-extrabold tracking-tight" />
+              </Element>
+            </LogoDrop>
             <Editable k="about" field="about" as="p" className="mt-4 max-w-sm text-sm leading-relaxed text-white/60" />
 
             {socials.length > 0 && (
@@ -233,7 +309,7 @@ export function FooterRenderer() {
                     <a
                       key={i}
                       href={ctx.href(s.href ?? '#')}
-                      data-el={`socials.${i}`}
+                      data-el={ctx.mode === 'edit' ? `socials.${i}` : undefined}
                       onClick={(e) => {
                         if (ctx.mode === 'edit') {
                           e.preventDefault()
@@ -275,7 +351,7 @@ export function FooterRenderer() {
                 key={ci}
                 k={`column.${ci}`}
                 as="div"
-                data-el={`columns.${ci}`}
+                data-el={ctx.mode === 'edit' ? `columns.${ci}` : undefined}
                 onClick={(e: React.MouseEvent<HTMLElement>) => {
                   if (ctx.mode === 'edit') {
                     e.stopPropagation()
@@ -289,7 +365,7 @@ export function FooterRenderer() {
                     <li key={li}>
                       <a
                         href={ctx.href(link.href ?? '#')}
-                        data-el={`columns.${ci}.links.${li}`}
+                        data-el={ctx.mode === 'edit' ? `columns.${ci}.links.${li}` : undefined}
                         onClick={(e) => {
                           if (ctx.mode === 'edit') {
                             e.preventDefault()

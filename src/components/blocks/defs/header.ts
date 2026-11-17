@@ -73,6 +73,7 @@ export const headerBlock: BlockDefinition = {
     { key: 'search', label: 'Search' },
     { key: 'cta.button', label: 'CTA button', fieldKey: 'ctaLabel' },
     { key: 'topbar', label: 'Announcement bar', fieldKey: 'topbarText' },
+    { key: 'topbar.phone', label: 'Phone', fieldKey: 'phone' },
   ],
 }
 

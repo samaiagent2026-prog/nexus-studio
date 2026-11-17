@@ -159,6 +159,14 @@ export function Canvas(props: CanvasProps) {
     return found ? schemaCopy(found, lang) : selection.elementKey
   }, [selectedBlock, selection, lang])
 
+  /* The quick-edit panel lives in the editor shell, so it asks the canvas to
+     begin inline text editing through a window event. */
+  React.useEffect(() => {
+    const handler = () => startInlineEdit()
+    window.addEventListener('nexus:edit-text', handler)
+    return () => window.removeEventListener('nexus:edit-text', handler)
+  }, [startInlineEdit])
+
   /* ---------------- context menu ---------------- */
 
   const menuActions = React.useMemo<MenuAction[]>(() => {
@@ -234,6 +242,17 @@ export function Canvas(props: CanvasProps) {
 
   const handleDragOver = (e: React.DragEvent) => {
     const types = Array.from(e.dataTransfer.types)
+    // A dragged image file or a dragged image URL: highlight the drop target.
+    if (types.includes('Files') || types.includes('text/uri-list') || types.includes('text/plain')) {
+      const target = (e.target as HTMLElement).closest<HTMLElement>('[data-drop-image]')
+      if (target) {
+        e.preventDefault()
+        e.stopPropagation()
+        e.dataTransfer.dropEffect = 'copy'
+        target.classList.add('ring-4', 'ring-brand-500')
+        return
+      }
+    }
     if (types.includes(BLOCK_MIME)) {
       const section = (e.target as HTMLElement).closest<HTMLElement>('[data-page-index]')
       if (!section) return
@@ -255,6 +274,7 @@ export function Canvas(props: CanvasProps) {
   const handleDrop = (e: React.DragEvent) => {
     clearItemHighlight()
     setDropTarget(null)
+    frameRef.current?.querySelectorAll('[data-drop-image]').forEach((el) => el.classList.remove('ring-4', 'ring-brand-500'))
     const blockId = e.dataTransfer.getData(BLOCK_MIME)
     if (blockId) {
       e.preventDefault()
@@ -281,6 +301,27 @@ export function Canvas(props: CanvasProps) {
         if (to !== index) props.onMoveItem(itemBlockId, field, index, to)
       } catch {
         /* malformed payload — ignore */
+      }
+      return
+    }
+    // A file (or image URL) dropped straight onto an image placeholder. The
+    // ImageBox has its own handler; this is the fallback for drops that land on
+    // a child of the box, where the event never reaches the box itself.
+    const imageTarget = (e.target as HTMLElement).closest<HTMLElement>('[data-drop-image]')
+    const droppedFile = e.dataTransfer.files?.[0]
+    const droppedUrl = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain')
+    if (imageTarget && (droppedFile?.type.startsWith('image/') || /^(https?:|data:image)/.test(droppedUrl.trim()))) {
+      e.preventDefault()
+      const field = imageTarget.dataset.dropImage!
+      const owner = imageTarget.closest<HTMLElement>('[data-block-id]')
+      const ownerId = owner?.dataset.blockId
+      if (!ownerId) return
+      if (droppedFile?.type.startsWith('image/')) {
+        const reader = new FileReader()
+        reader.onload = () => props.onPropChange(ownerId, field, String(reader.result))
+        reader.readAsDataURL(droppedFile)
+      } else {
+        props.onPropChange(ownerId, field, droppedUrl.trim())
       }
     }
   }

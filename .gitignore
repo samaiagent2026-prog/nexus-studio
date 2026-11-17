@@ -5,3 +5,7 @@ dist-ssr
 .DS_Store
 .agent_tmp
 *.log
+
+# Generated source archives served for download
+public/nexus-studio-source.tar.gz
+public/nexus-studio-source.zip

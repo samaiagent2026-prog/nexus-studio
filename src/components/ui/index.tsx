@@ -225,32 +225,116 @@ export function Segmented<T extends string>({
   )
 }
 
-export function ColorInput({ value, onChange, allowClear, lang = 'en' }: { value?: string; onChange: (v: string) => void; allowClear?: boolean; lang?: 'en' | 'ar' }) {
+/** Curated swatches so colours can be picked by clicking instead of typing hex. */
+export const COLOR_SWATCHES: { label: string; colors: string[] }[] = [
+  { label: 'Neutral', colors: ['#0b1020', '#1f2937', '#374151', '#4b5563', '#6b7280', '#9ca3af', '#d1d5db', '#e5e7eb', '#f3f4f6', '#ffffff'] },
+  { label: 'Brand', colors: ['#eef2ff', '#c7d2fe', '#818cf8', '#6366f1', '#4f46e5', '#4338ca', '#1e1b4b'] },
+  { label: 'Warm', colors: ['#fff7ed', '#fed7aa', '#fb923c', '#f97316', '#ea580c', '#c2410c', '#7c2d12'] },
+  { label: 'Cool', colors: ['#ecfeff', '#a5f3fc', '#22d3ee', '#06b6d4', '#0891b2', '#0e7490', '#083344'] },
+  { label: 'Green', colors: ['#ecfdf5', '#a7f3d0', '#34d399', '#10b981', '#059669', '#047857', '#022c22'] },
+  { label: 'Rose', colors: ['#fff1f2', '#fecdd3', '#fb7185', '#f43f5e', '#e11d48', '#be123c', '#4c0519'] },
+  { label: 'Violet', colors: ['#f5f3ff', '#ddd6fe', '#a78bfa', '#8b5cf6', '#7c3aed', '#5b21b6', '#2e1065'] },
+]
+
+/**
+ * Colour control built around clicking a swatch. The hex field is optional
+ * and hidden behind a toggle so the common case stays a single click.
+ */
+export function ColorInput({
+  value,
+  onChange,
+  allowClear,
+  lang = 'en',
+  compact,
+}: {
+  value?: string
+  onChange: (v: string) => void
+  allowClear?: boolean
+  lang?: 'en' | 'ar'
+  compact?: boolean
+}) {
   const inputRef = React.useRef<HTMLInputElement>(null)
+  const [custom, setCustom] = React.useState(false)
   const safe = value && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(value) ? value : '#3b5ef6'
+  const groups = React.useMemo(() => {
+    if (!value) return COLOR_SWATCHES
+    const known = COLOR_SWATCHES.some((g) => g.colors.some((c) => c.toLowerCase() === value.toLowerCase()))
+    return known ? COLOR_SWATCHES : [{ label: t(lang, 'currentColour'), colors: [value] }, ...COLOR_SWATCHES]
+  }, [value, lang])
+
   return (
-    <div className="flex items-center gap-2">
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        className="relative h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-ink-200 shadow-inner transition hover:scale-105"
-        style={{ background: value || 'repeating-conic-gradient(#e2e8f0 0% 25%, #ffffff 0% 50%) 50% / 10px 10px' }}
-        aria-label={t(lang, 'pickColour')}
-      >
-        <span className="absolute inset-0" style={{ background: value || 'transparent' }} />
-      </button>
-      <input
-        value={value ?? ''}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="#3b5ef6"
-        className="field flex-1 font-mono text-[12px]"
-      />
-      {allowClear && value && (
-        <button type="button" onClick={() => onChange('')} className="btn-ghost !px-2" title={t(lang, 'clear')}>
-          <Ic n='X' size={14} />
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap gap-1.5">
+        {groups.map((group) => (
+          <React.Fragment key={group.label}>
+            {group.colors.map((c) => (
+              <button
+                key={`${group.label}-${c}`}
+                type="button"
+                onClick={() => onChange(c)}
+                title={`${c} · ${group.label}`}
+                aria-label={c}
+                className={cn(
+                  'h-7 w-7 rounded-lg border shadow-inner transition hover:scale-110',
+                  value?.toLowerCase() === c.toLowerCase() ? 'border-ink-900 ring-2 ring-ink-900/25' : 'border-black/10',
+                )}
+                style={{ background: c }}
+              />
+            ))}
+            <span className="mx-0.5 w-px self-stretch bg-ink-200" aria-hidden />
+          </React.Fragment>
+        ))}
+        {allowClear && (
+          <button
+            type="button"
+            onClick={() => onChange('')}
+            title={t(lang, 'clear')}
+            className={cn(
+              'inline-flex h-7 items-center gap-1 rounded-lg border border-ink-200 bg-white px-2 text-[10.5px] font-bold text-ink-500 transition hover:bg-ink-100',
+              !value && 'border-ink-900 ring-2 ring-ink-900/20',
+            )}
+          >
+            <Ic n='Ban' size={12} />
+            {t(lang, 'none')}
+          </button>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setCustom((v) => !v)}
+          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-ink-500 transition hover:text-brand-600"
+        >
+          <Ic n='Pipette' size={12} />
+          {t(lang, 'customColour')}
         </button>
+        {!compact && (
+          <span className="inline-flex items-center gap-1.5 rounded-lg border border-ink-200 bg-white px-1.5 py-1">
+            <span className="h-4 w-4 rounded border border-black/10" style={{ background: value || 'transparent' }} />
+            <span className="font-mono text-[10.5px] text-ink-500">{value || '—'}</span>
+          </span>
+        )}
+      </div>
+
+      {custom && (
+        <div className="flex items-center gap-2 rounded-xl border border-ink-200 bg-[var(--surface-2)] p-2">
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="h-8 w-8 shrink-0 overflow-hidden rounded-lg border border-ink-200 transition hover:scale-105"
+            style={{ background: value || '#ffffff' }}
+            aria-label={t(lang, 'pickColour')}
+          />
+          <input
+            value={value ?? ''}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="#3b5ef6"
+            className="field flex-1 font-mono text-[12px]"
+          />
+          <input ref={inputRef} type="color" value={safe} onChange={(e) => onChange(e.target.value)} className="sr-only" />
+        </div>
       )}
-      <input ref={inputRef} type="color" value={safe} onChange={(e) => onChange(e.target.value)} className="sr-only" />
     </div>
   )
 }

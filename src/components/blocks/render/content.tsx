@@ -242,18 +242,19 @@ export function TabsRenderer() {
   const tabs: any[] = p.tabs ?? []
   const [active, setActive] = React.useState(0)
   const variant = p.variant ?? 'pill'
-  const current = tabs[active] ?? tabs[0] ?? {}
-  const bullets: any[] = current.bullets ?? []
 
   return (
     <Section>
       {(p.heading || p.eyebrow) && <SectionHeading k="heading" field="heading" eyebrowField="eyebrow" align="center" className="mb-10" />}
 
-      <div className={cn('mx-auto mb-10 flex w-fit flex-wrap items-center justify-center gap-1', variant === 'segmented' && 'rounded-2xl border border-ink-200 bg-white p-1 shadow-soft')}>
+      <div data-nexus-tabs-root={ctx.mode === 'edit' ? undefined : ''}>
+      <div data-nexus-tabs={ctx.mode === 'edit' ? undefined : ''} className={cn('mx-auto mb-10 flex w-fit flex-wrap items-center justify-center gap-1', variant === 'segmented' && 'rounded-2xl border border-ink-200 bg-white p-1 shadow-soft')}>
         {tabs.map((tab, i) => (
           <button
             key={i}
             type="button"
+            data-nexus-tab={ctx.mode === 'edit' ? undefined : String(i)}
+            aria-selected={active === i}
             onClick={(e) => {
               e.stopPropagation()
               if (ctx.mode === 'edit') {
@@ -277,26 +278,36 @@ export function TabsRenderer() {
         ))}
       </div>
 
-      <div className="grid items-center gap-12 lg:grid-cols-2">
-        <div className="flex flex-col gap-5">
-          <Editable k="tab.heading" field={`tabs.${active}.heading`} as="h3" className="font-display text-2xl font-extrabold tracking-tight text-ink-950 lg:text-3xl" />
-          <Editable k="tab.body" field={`tabs.${active}.body`} as="p" className="text-[15px] leading-relaxed text-ink-600" />
-          {bullets.length > 0 && (
-            <ul className="grid gap-2.5">
-              {bullets.map((b, i) => (
-                <li key={i} className="flex items-center gap-2.5 text-[14.5px] font-medium text-ink-700">
-                  <Ic n='CheckCircle2' size={17} className="text-brand-600" />
-                  <Editable k={`tab.bullet.${i}`} field={`tabs.${active}.bullets.${i}`} as="span" affordance={false} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        <Element k="tab.media">
-          <div className="overflow-hidden rounded-[26px] border border-white/60 bg-white/60 p-2.5 shadow-lift backdrop-blur">
-            <ImageBox src={current.image} ratio="4/3" rounded="rounded-[20px]" />
+      {tabs.map((tab, i) => {
+        const tabBullets: any[] = tab.bullets ?? []
+        return (
+          <div
+            key={i}
+            data-nexus-tab-panel={ctx.mode === 'edit' ? undefined : String(i)}
+            className={cn('grid items-center gap-12 lg:grid-cols-2', i !== active && 'hidden')}
+          >
+            <div className="flex flex-col gap-5">
+              <Editable k={`tab.${i}.heading`} field={`tabs.${i}.heading`} as="h3" className="font-display text-2xl font-extrabold tracking-tight text-ink-950 lg:text-3xl" />
+              <Editable k={`tab.${i}.body`} field={`tabs.${i}.body`} as="p" className="text-[15px] leading-relaxed text-ink-600" />
+              {tabBullets.length > 0 && (
+                <ul className="grid gap-2.5">
+                  {tabBullets.map((b, bi) => (
+                    <li key={bi} className="flex items-center gap-2.5 text-[14.5px] font-medium text-ink-700">
+                      <Ic n='CheckCircle2' size={17} className="text-brand-600" />
+                      <Editable k={`tab.${i}.bullet.${bi}`} field={`tabs.${i}.bullets.${bi}`} as="span" affordance={false} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <Element k="tab.media">
+              <div className="overflow-hidden rounded-[26px] border border-white/60 bg-white/60 p-2.5 shadow-lift backdrop-blur">
+                <ImageBox k={`tab.${i}.image`} field={`tabs.${i}.image`} src={tab.image} ratio="4/3" rounded="rounded-[20px]" />
+              </div>
+            </Element>
           </div>
-        </Element>
+        )
+      })}
       </div>
     </Section>
   )
@@ -406,7 +417,7 @@ export function GalleryRenderer() {
                 layout === 'masonry' && (i % 5 === 0 ? 'sm:row-span-2' : ''),
               )}
             >
-              <div onClick={() => ctx.mode !== 'edit' && setLightbox(i)} className="h-full w-full">
+              <div onClick={() => ctx.mode !== 'edit' && setLightbox(i)} data-nexus-lightbox-src={ctx.mode === 'edit' ? undefined : item.image} className="h-full w-full">
                 <ImageBox src={item.image} ratio={layout === 'masonry' && i % 5 === 0 ? '3/4' : '4/3'} rounded="rounded-none" className="h-full w-full" />
               </div>
               <div className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-2 bg-gradient-to-t from-ink-950/90 via-ink-950/40 to-transparent p-4 pt-10 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">

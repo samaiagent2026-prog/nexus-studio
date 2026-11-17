@@ -608,15 +608,24 @@ export function AccordionRenderer() {
   const layout = p.layout ?? 'split'
 
   const list = (
-    <div className="flex flex-col gap-3">
+    <div data-nexus-accordion={ctx.mode === 'edit' ? undefined : ''} className="flex flex-col gap-3">
       {items.map((item, i) => {
         const isOpen = open === i
         const q = item.question ?? item.title
         const a = item.answer ?? item.text
         return (
-          <EditableItem key={i} k="items" index={i} className="overflow-hidden rounded-2xl border border-ink-200/80 bg-white shadow-soft transition hover:border-brand-200">
+          <EditableItem
+            key={i}
+            k="items"
+            index={i}
+            data-nexus-accordion-item={ctx.mode === 'edit' ? undefined : ''}
+            data-open={ctx.mode === 'edit' ? undefined : String(isOpen)}
+            className="overflow-hidden rounded-2xl border border-ink-200/80 bg-white shadow-soft transition hover:border-brand-200"
+          >
             <button
               type="button"
+              data-nexus-accordion-trigger={ctx.mode === 'edit' ? undefined : ''}
+              aria-expanded={isOpen}
               onClick={(e) => {
                 e.stopPropagation()
                 if (ctx.mode === 'edit') {
@@ -640,7 +649,11 @@ export function AccordionRenderer() {
                 <Ic n='ChevronDown' size={16} />
               </span>
             </button>
-            <div className={cn('grid transition-all duration-300 ease-out', isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0')}>
+            <div
+              data-nexus-accordion-panel={ctx.mode === 'edit' ? undefined : ''}
+              aria-hidden={!isOpen}
+              className={cn('grid transition-all duration-300 ease-out', isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0', !isOpen && ctx.mode !== 'edit' && 'hidden')}
+            >
               <div className="overflow-hidden">
                 <Editable
                   k={`item.${i}.answer`}

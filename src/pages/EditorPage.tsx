@@ -6,8 +6,10 @@ import { dirFor } from '../lib/dir'
 import { applyTheme } from '../lib/theme'
 import { clone, downloadJson, tr } from '../lib/utils'
 import { getBlockDef } from '../components/blocks/registry'
+import { downloadSiteBundle } from '../lib/export/site'
 import { Canvas, CanvasPage } from '../components/builder/Canvas'
 import { Inspector } from '../components/builder/Inspector'
+import { QuickEdit, elementLabelOf } from '../components/builder/QuickEdit'
 import { LayersPanel, SectionLibrary } from '../components/builder/Library'
 import { DesignPanel } from '../components/builder/DesignPanel'
 import { DataPanel, PagesPanel, SettingsPanel } from '../components/builder/Panels'
@@ -19,9 +21,14 @@ import { cn } from '../lib/utils'
 /* ============================================================
    Editor shell: left rail + canvas + inspector, with a full
    undo/redo history and instant theme application.
+
+   Simple mode keeps the chrome minimal — click anything on the
+   canvas and its own panel appears. Pro mode adds the full rail.
    ============================================================ */
 
 type RailTab = 'insert' | 'layers' | 'pages' | 'design' | 'settings' | 'data'
+
+const SIMPLE_RAIL: RailTab[] = ['insert', 'design']
 
 export function EditorPage() {
   const { siteId } = useParams()
@@ -32,11 +39,16 @@ export function EditorPage() {
 
   const [rail, setRail] = React.useState<RailTab>('insert')
   const [railOpen, setRailOpen] = React.useState(true)
+  const [simple, setSimple] = React.useState(() => localStorage.getItem('nexus-simple-mode') !== '0')
   const [inspectorTab, setInspectorTab] = React.useState<'content' | 'style' | 'advanced'>('content')
   const [confirmDelete, setConfirmDelete] = React.useState<string | null>(null)
   const [pendingIndex, setPendingIndex] = React.useState<number | null>(null)
   const [showInspector, setShowInspector] = React.useState(true)
   const themeRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    localStorage.setItem('nexus-simple-mode', simple ? '1' : '0')
+  }, [simple])
 
   /* activate the site when arriving via a direct URL */
   React.useEffect(() => {
@@ -101,6 +113,16 @@ export function EditorPage() {
   const selectedDef = selectedBlock ? getBlockDef(selectedBlock.type) : undefined
   const blocksForLayers = pageBlocks(site, page)
 
+  const handleDownload = () => {
+    try {
+      const result = downloadSiteBundle(site, store.lang)
+      store.toast(`${t(store.lang, 'downloadSiteDone')} · ${result.files.length} ${t(store.lang, 'filesLabel')}`)
+    } catch (error) {
+      console.error(error)
+      store.toast(t(store.lang, 'downloadSiteFailed'), 'error')
+    }
+  }
+
   const handleImport = (json: string) => {
     try {
       const parsed = JSON.parse(json) as Site
@@ -127,6 +149,33 @@ export function EditorPage() {
   const handleReset = () => {
     store.toast('Reset is available from the dashboard', 'info')
   }
+
+  /* Toggle the image catalogue (a gallery section) on the current page. */
+  const catalogueIndex = page ? page.blocks.findIndex((b) => b.type === 'gallery') : -1
+  const hasCatalogue = catalogueIndex >= 0
+  const toggleCatalogue = () => {
+    if (hasCatalogue) {
+      store.removeBlock(page!.blocks[catalogueIndex].id)
+      store.toast(t(store.lang, 'catalogOff'), 'info')
+    } else {
+      store.insertBlock('gallery', page ? page.blocks.length : undefined)
+      store.toast(t(store.lang, 'catalogOn'))
+    }
+  }
+
+  const railTabs: { id: RailTab; icon: string; label: string }[] = (
+    [
+      { id: 'insert', icon: 'PlusCircle', label: t(store.lang, 'sections') },
+      { id: 'layers', icon: 'Layers', label: t(store.lang, 'layers') },
+      { id: 'pages', icon: 'Files', label: t(store.lang, 'pages') },
+      { id: 'design', icon: 'Palette', label: t(store.lang, 'design') },
+      { id: 'data', icon: 'Database', label: t(store.lang, 'contentTab') },
+      { id: 'settings', icon: 'Settings', label: t(store.lang, 'settings') },
+    ] as { id: RailTab; icon: string; label: string }[]
+  ).filter((item) => !simple || SIMPLE_RAIL.includes(item.id))
+
+  const selectedElementLabel = selectedBlock ? elementLabelOf(selectedBlock, selectedDef, store.selection?.elementKey ?? 'section', store.lang) : ''
+  const selectedIndex = page ? page.blocks.findIndex((b) => b.id === selectedBlock?.id) : -1
 
   return (
     <div ref={themeRef} className="flex h-screen flex-col overflow-hidden bg-ink-100" dir={dirFor(store.lang)}>
@@ -174,6 +223,29 @@ export function EditorPage() {
         </div>
 
         <div className="flex items-center gap-1.5">
+          <Segmented
+            value={simple ? 'simple' : 'pro'}
+            onChange={(v) => setSimple(v === 'simple')}
+            options={[
+              { value: 'simple', label: t(store.lang, 'simpleMode'), icon: 'Wand2', title: t(store.lang, 'simpleModeHint') },
+              { value: 'pro', label: t(store.lang, 'proMode'), icon: 'SlidersHorizontal', title: t(store.lang, 'proModeHint') },
+            ]}
+            size="sm"
+            className="hidden sm:inline-flex"
+          />
+          <Tooltip label={hasCatalogue ? t(store.lang, 'removeCatalog') : t(store.lang, 'addCatalog')}>
+            <button
+              type="button"
+              onClick={toggleCatalogue}
+              className={cn(
+                'inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-[12.5px] font-bold transition',
+                hasCatalogue ? 'bg-brand-600 text-white shadow-soft' : 'bg-ink-100 text-ink-700 hover:bg-ink-200',
+              )}
+            >
+              <Ic n='Images' size={15} />
+              <span className="hidden lg:inline">{t(store.lang, 'imageCatalog')}</span>
+            </button>
+          </Tooltip>
           <Badge tone={site.settings.published ? 'success' : 'warning'} icon={site.settings.published ? 'Globe' : 'EyeOff'} className="hidden sm:inline-flex">
             {site.settings.published ? t(store.lang, 'publishedLabel') : t(store.lang, 'draftLabel')}
           </Badge>
@@ -188,6 +260,12 @@ export function EditorPage() {
             </button>
           </Tooltip>
           <IconButton icon={showInspector ? 'PanelRightClose' : 'PanelRightOpen'} label={t(store.lang, 'settings')} onClick={() => setShowInspector((v) => !v)} />
+          <Tooltip label={t(store.lang, 'downloadSiteHint')}>
+            <button type="button" className="btn-outline !px-3" onClick={handleDownload}>
+              <Ic n='FolderDown' size={15} />
+              <span className="hidden lg:inline">{t(store.lang, 'downloadSite')}</span>
+            </button>
+          </Tooltip>
           <button type="button" className="btn-primary !px-3" onClick={() => window.open(`/site/${site.slug}/${page.path === '/' ? '' : page.path.slice(1)}`, '_blank')}>
             <Ic n='ExternalLink' size={15} />
             <span className="hidden sm:inline">{t(store.lang, 'viewSiteLabel')}</span>
@@ -195,19 +273,10 @@ export function EditorPage() {
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1">
+      <div className="relative flex min-h-0 flex-1">
         {/* ---------- left rail ---------- */}
         <nav className="z-30 flex w-14 shrink-0 flex-col items-center gap-1 border-e border-ink-200 bg-white py-2.5">
-          {(
-            [
-              { id: 'insert', icon: 'PlusCircle', label: t(store.lang, 'sections') },
-              { id: 'layers', icon: 'Layers', label: t(store.lang, 'layers') },
-              { id: 'pages', icon: 'Files', label: t(store.lang, 'pages') },
-              { id: 'design', icon: 'Palette', label: t(store.lang, 'design') },
-              { id: 'data', icon: 'Database', label: t(store.lang, 'contentTab') },
-              { id: 'settings', icon: 'Settings', label: t(store.lang, 'settings') },
-            ] as { id: RailTab; icon: string; label: string }[]
-          ).map((item) => {
+          {railTabs.map((item) => {
             const Icon = resolveIcon(item.icon)
             const active = rail === item.id && railOpen
             return (
@@ -229,10 +298,22 @@ export function EditorPage() {
               </Tooltip>
             )
           })}
+          <div className="mt-auto">
+            <Tooltip label={simple ? t(store.lang, 'proModeHint') : t(store.lang, 'simpleModeHint')} side="right">
+              <button
+                type="button"
+                onClick={() => setSimple((v) => !v)}
+                className={cn('inline-flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-2xl transition', simple ? 'bg-ink-950 text-white' : 'text-ink-500 hover:bg-ink-100')}
+              >
+                <Ic n={simple ? 'Wand2' : 'SlidersHorizontal'} size={18} />
+                <span className="text-[8.5px] font-bold uppercase">{simple ? t(store.lang, 'simpleMode') : t(store.lang, 'proMode')}</span>
+              </button>
+            </Tooltip>
+          </div>
         </nav>
 
         {railOpen && (
-          <aside className="z-20 flex w-[320px] shrink-0 flex-col border-e border-ink-200 bg-[var(--surface-2)]">
+          <aside className="absolute inset-y-0 start-14 z-20 flex w-[320px] shrink-0 flex-col border-e border-ink-200 bg-[var(--surface-2)] shadow-lift xl:relative xl:start-0 xl:shadow-none">
             <div className="flex items-center justify-between gap-2 border-b border-[var(--border)] bg-white px-3.5 py-3">
               <h2 className="font-display text-[13.5px] font-extrabold text-ink-950">
                 {rail === 'insert' && t(store.lang, 'sectionLibrary')}
@@ -304,6 +385,7 @@ export function EditorPage() {
                   onAdmin={store.updateAdmin}
                   onAddMedia={store.addMedia}
                   onExport={() => downloadJson(`${site.slug}-site.json`, site)}
+                  onDownload={handleDownload}
                   onImport={handleImport}
                   onReset={handleReset}
                 />
@@ -355,22 +437,60 @@ export function EditorPage() {
 
         {/* ---------- inspector ---------- */}
         {showInspector && (
-          <aside className="z-20 hidden w-[340px] shrink-0 flex-col border-s border-ink-200 bg-white xl:flex">
+          <aside
+            className={cn(
+              'z-20 flex shrink-0 flex-col border-s border-ink-200 bg-white',
+              simple
+                ? 'absolute inset-y-0 end-0 w-[320px] shadow-lift xl:relative xl:end-0 xl:w-[340px] xl:shadow-none'
+                : 'hidden w-[340px] xl:flex',
+            )}
+          >
             {selectedBlock ? (
-              <Inspector
-                block={selectedBlock}
-                def={selectedDef}
-                lang={store.lang}
-                elementKey={store.selection?.elementKey ?? 'section'}
-                media={site.media}
-                onAddMedia={store.addMedia}
-                tab={inspectorTab}
-                onTab={setInspectorTab}
-                onChangeProp={(path, value) => store.updateBlockProp(selectedBlock.id, path, value)}
-                onChangeElement={store.updateElementStyle.bind(null, selectedBlock.id)}
-                onResetElement={store.resetElementStyle.bind(null, selectedBlock.id)}
-                onChangeStyle={(patch) => store.updateBlockStyle(selectedBlock.id, patch)}
-              />
+              simple ? (
+                <QuickEdit
+                  block={selectedBlock}
+                  def={selectedDef}
+                  lang={store.lang}
+                  elementKey={store.selection?.elementKey ?? 'section'}
+                  elementLabel={selectedElementLabel}
+                  media={site.media}
+                  onAddMedia={store.addMedia}
+                  onChangeProp={(path, value) => store.updateBlockProp(selectedBlock.id, path, value)}
+                  onChangeElement={store.updateElementStyle.bind(null, selectedBlock.id)}
+                  onResetElement={store.resetElementStyle.bind(null, selectedBlock.id)}
+                  onChangeStyle={(patch) => store.updateBlockStyle(selectedBlock.id, patch)}
+                  onDuplicate={() => store.duplicateBlock(selectedBlock.id)}
+                  onDelete={() => setConfirmDelete(selectedBlock.id)}
+                  onHide={() => store.toggleBlockFlag(selectedBlock.id, 'hidden')}
+                  onEditText={() => window.dispatchEvent(new CustomEvent('nexus:edit-text'))}
+                  isCatalogue={selectedBlock.type === 'gallery'}
+                  canMoveUp={selectedIndex > 0}
+                  canMoveDown={selectedIndex >= 0 && selectedIndex < page.blocks.length - 1}
+                  onMove={(dir) => {
+                    if (selectedIndex < 0) return
+                    store.moveBlock(selectedIndex, selectedIndex + dir)
+                  }}
+                  onMoveToEdge={(edge) => {
+                    if (selectedIndex < 0) return
+                    store.moveBlock(selectedIndex, edge === 'top' ? 0 : page.blocks.length - 1)
+                  }}
+                />
+              ) : (
+                <Inspector
+                  block={selectedBlock}
+                  def={selectedDef}
+                  lang={store.lang}
+                  elementKey={store.selection?.elementKey ?? 'section'}
+                  media={site.media}
+                  onAddMedia={store.addMedia}
+                  tab={inspectorTab}
+                  onTab={setInspectorTab}
+                  onChangeProp={(path, value) => store.updateBlockProp(selectedBlock.id, path, value)}
+                  onChangeElement={store.updateElementStyle.bind(null, selectedBlock.id)}
+                  onResetElement={store.resetElementStyle.bind(null, selectedBlock.id)}
+                  onChangeStyle={(patch) => store.updateBlockStyle(selectedBlock.id, patch)}
+                />
+              )
             ) : (
               <EmptyInspector lang={store.lang} onPick={() => setRail('insert')} />
             )}

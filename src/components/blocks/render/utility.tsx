@@ -475,7 +475,7 @@ export function BannerRenderer() {
     <Section className="!px-0" contentClassName="!px-5 sm:!px-6 lg:!px-8">
       <div className="absolute inset-0">
         <ImageBox src={p.image} ratio="16/9" rounded="rounded-none" className="h-full min-h-full w-full" />
-        <div className="absolute inset-0" style={{ background: `linear-gradient(105deg, rgba(9,12,24,${(p.overlay ?? 0.55) + 0.15}) 0%, rgba(9,12,24,${p.overlay ?? 0.55}) 60%, rgba(9,12,24,${Math.max(0.15, (p.overlay ?? 0.55) - 0.25)}) 100%)` }} />
+        <div className="pointer-events-none absolute inset-0" style={{ background: `linear-gradient(105deg, rgba(9,12,24,${(p.overlay ?? 0.55) + 0.15}) 0%, rgba(9,12,24,${p.overlay ?? 0.55}) 60%, rgba(9,12,24,${Math.max(0.15, (p.overlay ?? 0.55) - 0.25)}) 100%)` }} />
       </div>
       <div className={cn('relative flex flex-col gap-6', BANNER_HEIGHT[p.height ?? 'lg'] ?? BANNER_HEIGHT.lg, align === 'center' && 'items-center text-center')}>
         <div className={cn('max-w-2xl', align === 'center' && 'mx-auto')}>
@@ -526,7 +526,7 @@ export function TableRenderer() {
               {columns.map((c, i) => (
                 <th
                   key={i}
-                  data-el={`col.${i}`}
+                  data-el={ctx.mode === 'edit' ? `col.${i}` : undefined}
                   onClick={(e) => {
                     if (ctx.mode === 'edit') {
                       e.stopPropagation()

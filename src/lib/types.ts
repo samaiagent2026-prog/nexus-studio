@@ -38,6 +38,14 @@ export interface ElementStyle {
   opacity?: number
   maxWidth?: number
   hidden?: boolean
+  /** Free positioning: pixels the element is nudged from its natural spot. */
+  offsetX?: number
+  offsetY?: number
+  /** Explicit box size, set by dragging the edge handles. */
+  widthPx?: number
+  heightPx?: number
+  /** Visual scale applied on top of the natural size (drag the resize grip). */
+  scale?: number
 }
 
 export interface BlockStyle {
@@ -45,6 +53,10 @@ export interface BlockStyle {
   bgImage?: string
   bgOverlay?: number
   bgSize?: 'cover' | 'contain' | 'auto'
+  /** Looping muted background video (URL or uploaded data URL). */
+  bgVideo?: string
+  /** Still frame shown while the video loads. */
+  bgVideoPoster?: string
   paddingY?: number
   paddingX?: number
   radius?: number

@@ -6,7 +6,7 @@ import type { BlockDefinition, FieldSchema } from '../../lib/schema'
 import { cn, deletePath, getPath, move, setPath, tr, uid } from '../../lib/utils'
 import { Badge, ColorInput, Field, IconButton, NumberInput, Segmented, Select, Slider, TextArea, TextInput, Toggle, Tooltip } from '../ui'
 import { IconPickerButton } from './IconPicker'
-import { ImagePicker } from './ImagePicker'
+import { ImagePicker, VideoPicker } from './ImagePicker'
 import { blockLabel } from '../../lib/blockCopy'
 import { schemaCopy } from '../../lib/schemaCopy'
 import { t } from '../../lib/i18n'
@@ -513,7 +513,15 @@ function StylePanel({ block, lang, elementKey, onChangeElement, onResetElement, 
             label={t(lang, 'backgroundImage')}
             lang={lang}
           />
-          {block.style.bgImage && (
+          <VideoPicker
+            value={block.style.bgVideo}
+            onChange={(v) => onChangeStyle({ bgVideo: v || undefined })}
+            media={[]}
+            onAddMedia={() => {}}
+            label={t(lang, 'backgroundVideo')}
+            lang={lang}
+          />
+          {(block.style.bgImage || block.style.bgVideo) && (
             <Slider label={t(lang, 'overlay')} value={block.style.bgOverlay ?? 0} onChange={(v) => onChangeStyle({ bgOverlay: v })} min={0} max={0.9} step={0.05} />
           )}
           <Field label={t(lang, 'animation')}>

@@ -166,6 +166,138 @@ export function ImagePicker({
   )
 }
 
+export function VideoPicker({
+  value,
+  onChange,
+  media,
+  onAddMedia,
+  label,
+  lang = 'en',
+}: {
+  value?: string
+  onChange: (url: string) => void
+  media: MediaAsset[]
+  onAddMedia: (assets: MediaAsset[]) => void
+  label?: string
+  lang?: Lang
+}) {
+  const [open, setOpen] = React.useState(false)
+  const title = label ?? t(lang, 'backgroundVideo')
+  const [url, setUrl] = React.useState('')
+  const [busy, setBusy] = React.useState(false)
+  const fileRef = React.useRef<HTMLInputElement>(null)
+  const videos = media.filter((m) => m.kind === 'video')
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files?.length) return
+    setBusy(true)
+    const assets: MediaAsset[] = []
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('video/')) continue
+      try {
+        const dataUrl = await readFileAsDataUrl(file)
+        assets.push({ id: uid('media'), name: file.name, url: dataUrl, kind: 'video', size: file.size, createdAt: Date.now() })
+      } catch {
+        /* skip unreadable file */
+      }
+    }
+    if (assets.length) {
+      onAddMedia(assets)
+      onChange(assets[0].url)
+      setOpen(false)
+    }
+    setBusy(false)
+  }
+
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} className="w-full">
+        <span className="group flex w-full items-center gap-3 rounded-xl border border-ink-200 bg-white p-2 transition hover:border-brand-300">
+          <span className="flex h-11 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-ink-100 text-ink-400">
+            {value ? <Ic n='Video' size={18} /> : <Ic n='Film' size={18} />}
+          </span>
+          <span className="min-w-0 flex-1 text-start">
+            <span className="block truncate text-[12.5px] font-semibold text-ink-800">
+              {value ? t(lang, 'replaceVideo') : t(lang, 'uploadVideo')}
+            </span>
+            <span className="block truncate text-[11px] text-ink-400">
+              {value ? value.replace(/^data:.*/, t(lang, 'uploaded')) : t(lang, 'videoFormats')}
+            </span>
+          </span>
+          <Ic n='ChevronDown' size={14} className="shrink-0 text-ink-400" />
+        </span>
+      </button>
+
+      <Modal open={open} onClose={() => setOpen(false)} title={title} subtitle={t(lang, 'videoFormats')} size="lg" icon="Video" lang={lang}>
+        <div
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault()
+            void handleFiles(e.dataTransfer.files)
+          }}
+          className="mb-5 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-ink-300 bg-[var(--surface-2)] px-6 py-9 text-center transition hover:border-brand-400"
+        >
+          <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-brand-600 shadow-soft">
+            <Ic n={busy ? 'Loader2' : 'Upload'} size={22} className={busy ? 'animate-spin' : ''} />
+          </span>
+          <p className="text-[13.5px] font-semibold text-ink-800">{t(lang, 'dragDropVideo')}</p>
+          <p className="text-[12px] text-ink-500">{t(lang, 'videoFormats')}</p>
+          <button type="button" className="btn-primary mt-1" onClick={() => fileRef.current?.click()} disabled={busy}>
+            <Ic n='Upload' size={15} />
+            {t(lang, 'chooseFile')}
+          </button>
+          <input ref={fileRef} type="file" accept="video/*" className="sr-only" onChange={(e) => void handleFiles(e.target.files)} />
+        </div>
+
+        <div className="mb-5 flex items-end gap-2">
+          <TextInput value={url} onChange={setUrl} placeholder="https://…/background.mp4" icon="Link" className="flex-1" />
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => {
+              if (!url.trim()) return
+              onChange(url.trim())
+              onAddMedia([{ id: uid('media'), name: url.split('/').pop() || 'linked video', url: url.trim(), kind: 'video', createdAt: Date.now() }])
+              setUrl('')
+              setOpen(false)
+            }}
+          >
+            {t(lang, 'useUrl')}
+          </button>
+        </div>
+
+        {videos.length > 0 && (
+          <>
+            <h4 className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.14em] text-ink-400">{t(lang, 'yourLibrary')}</h4>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {videos.map((asset) => (
+                <button
+                  key={asset.id}
+                  type="button"
+                  onClick={() => {
+                    onChange(asset.url)
+                    setOpen(false)
+                  }}
+                  className={cn(
+                    'group flex flex-col gap-1 rounded-xl border bg-white p-2 text-start transition hover:-translate-y-0.5 hover:shadow-lift',
+                    value === asset.url ? 'border-brand-500 ring-2 ring-brand-500/20' : 'border-ink-200',
+                  )}
+                  title={asset.name}
+                >
+                  <span className="flex items-center gap-2 text-[11.5px] font-semibold text-ink-700">
+                    <Ic n='Video' size={14} className="text-brand-600" />
+                    <span className="truncate">{asset.name}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </Modal>
+    </>
+  )
+}
+
 export function MediaGrid({
   media,
   onRemove,
@@ -219,7 +351,17 @@ export function MediaGrid({
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {media.map((asset) => (
-            <div key={asset.id} className="group relative overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-soft">
+            <div
+              key={asset.id}
+              className="group relative overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-soft"
+              draggable={asset.kind === 'image'}
+              onDragStart={(e) => {
+                if (asset.kind !== 'image') return
+                e.dataTransfer.setData('text/uri-list', asset.url)
+                e.dataTransfer.setData('text/plain', asset.url)
+                e.dataTransfer.effectAllowed = 'copy'
+              }}
+            >
               <div className="aspect-square overflow-hidden bg-ink-100">
                 {asset.kind === 'image' ? (
                   <img src={asset.url} alt={asset.name} className="h-full w-full object-cover" loading="lazy" />
